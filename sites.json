@@ -1,0 +1,431 @@
+{
+  "Pornhub_Scrape": {
+    "name": "Pornhub (Scrape)",
+    "base_url": "https://www.pornhub.com",
+    "search_method": "scrape_search_page",
+    "search_url_template": "https://www.pornhub.com/video/search?search={query}&page={page}",
+    "results_container_selector": "ul.videos.search-video-thumbs", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "result_item_selector": "li.videoBox", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "title_selector": "span.title a", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "video_url_selector": "span.title a[href]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "thumbnail_selector": "div.phimage img[src]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "duration_selector": "var.duration", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "rating_selector": ".rating-container .value", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "views_selector": "span.views var", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "author_selector": ".usernameWrap a", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "next_page_selector": "li.page_next a[href]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "popularity_multiplier": 0.65, // Lower for very large site
+    "scoring_weights": { // Example weights
+      "relevance_weight": 0.60,
+      "rating_weight": 0.25,
+      "views_weight": 0.05,
+      "multiplier_effect": 0.10
+    }
+  },
+  "Pornhub_Google": {
+    "name": "Pornhub (Google Search)",
+    "base_url": "https://www.pornhub.com",
+    "search_method": "google_site_search",
+    "search_url_template": null,
+    "popularity_multiplier": 0.65,
+    "scoring_weights": { // Example weights
+      "relevance_weight": 0.70, // Higher relevance focus for Search Engine results
+      "rating_weight": 0.10,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  },
+  "XVideos_Scrape": {
+    "name": "XVideos (Scrape)",
+    "base_url": "https://www.xvideos.com",
+    "search_method": "scrape_search_page",
+    "search_url_template": "https://www.xvideos.com/?k={query}&p={page}", // CHECK THIS TEMPLATE MANUALLY!
+    "results_container_selector": "div.mozaique", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "result_item_selector": "div.thumb-block", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "title_selector": "p.title a", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "video_url_selector": "p.title a[href]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "thumbnail_selector": ".thumb img[src]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "duration_selector": "span.duration", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "rating_selector": ".rating-good-perc span", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "views_selector": "span.views", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY! Need further parsing
+    "author_selector": "span.name", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "next_page_selector": "a.next-page[href]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "popularity_multiplier": 0.70,
+    "scoring_weights": {
+      "relevance_weight": 0.60,
+      "rating_weight": 0.25,
+      "views_weight": 0.05,
+      "multiplier_effect": 0.10
+    }
+  },
+  "XVideos_Google": {
+    "name": "XVideos (Google Search)",
+    "base_url": "https://www.xvideos.com",
+    "search_method": "google_site_search",
+    "search_url_template": null,
+    "popularity_multiplier": 0.70,
+    "scoring_weights": {
+      "relevance_weight": 0.70,
+      "rating_weight": 0.10,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  },
+  "YouPorn_Scrape": {
+    "name": "YouPorn (Scrape)",
+    "base_url": "https://www.youporn.com",
+    "search_method": "scrape_search_page",
+    "search_url_template": "https://www.youporn.com/search/?query={query}&page={page}", // CHECK THIS TEMPLATE MANUALLY!
+    "results_container_selector": "#searchResults", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "result_item_selector": "div.video-box", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "title_selector": "div.video-title span", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "video_url_selector": "a.video-box-image[href]", // Link might be on image? VERIFY MANUALLY!
+    "thumbnail_selector": "img.video-thumbnail[src]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "duration_selector": "div.duration", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "rating_selector": "div.rating-value", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "views_selector": "div.views", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "author_selector": "div.uploader", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "next_page_selector": "a.playbook-pager-next[href]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "popularity_multiplier": 0.75,
+    "scoring_weights": {
+      "relevance_weight": 0.60,
+      "rating_weight": 0.25,
+      "views_weight": 0.05,
+      "multiplier_effect": 0.10
+    }
+  },
+  "YouPorn_Google": {
+    "name": "YouPorn (Google Search)",
+    "base_url": "https://www.youporn.com",
+    "search_method": "google_site_search",
+    "search_url_template": null,
+    "popularity_multiplier": 0.75,
+    "scoring_weights": {
+      "relevance_weight": 0.70,
+      "rating_weight": 0.10,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  },
+  "Tube8_Scrape": {
+    "name": "Tube8 (Scrape)",
+    "base_url": "https://www.tube8.com",
+    "search_method": "scrape_search_page",
+    "search_url_template": "https://www.tube8.com/search/?q={query}&page={page}", // CHECK THIS TEMPLATE MANUALLY!
+    "results_container_selector": "ul.videoslisting", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "result_item_selector": "li.video_container", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "title_selector": "span.title", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY! Usually within an 'a' tag.
+    "video_url_selector": "a.video_link[href]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY! Check parent structure.
+    "thumbnail_selector": "img.thumb[src]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "duration_selector": ".duration", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "rating_selector": ".value", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY! Too generic.
+    "views_selector": ".views", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY! Too generic.
+    "author_selector": ".added_by a", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "next_page_selector": ".pagination_next a[href]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "popularity_multiplier": 0.80,
+    "scoring_weights": {
+      "relevance_weight": 0.60,
+      "rating_weight": 0.25,
+      "views_weight": 0.05,
+      "multiplier_effect": 0.10
+    }
+  },
+  "Tube8_Google": {
+    "name": "Tube8 (Google Search)",
+    "base_url": "https://www.tube8.com",
+    "search_method": "google_site_search",
+    "search_url_template": null,
+    "popularity_multiplier": 0.80,
+    "scoring_weights": {
+      "relevance_weight": 0.70,
+      "rating_weight": 0.10,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  },
+  "RedTube_Scrape": {
+    "name": "RedTube (Scrape)",
+    "base_url": "https://www.redtube.com",
+    "search_method": "scrape_search_page",
+    "search_url_template": "https://www.redtube.com/?search={query}&page={page}", // CHECK THIS TEMPLATE MANUALLY!
+    "results_container_selector": "#search_results_block ul.videos_block", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "result_item_selector": "li.video_bloc", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "title_selector": "a.video_title_link", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "video_url_selector": "a.video_title_link[href]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "thumbnail_selector": "img.video_thumb_img[data-thumb_url]", // Attribute might be different 'data-src'? VERIFY MANUALLY!
+    "duration_selector": "span.duration", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "rating_selector": "span.video_rating_value", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "views_selector": "span.views_count", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "author_selector": "span.block_by a", // Maybe? VERIFY MANUALLY!
+    "next_page_selector": "li.item_next a[href]", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "popularity_multiplier": 0.80,
+    "scoring_weights": {
+      "relevance_weight": 0.60,
+      "rating_weight": 0.25,
+      "views_weight": 0.05,
+      "multiplier_effect": 0.10
+    }
+  },
+  "RedTube_Google": {
+    "name": "RedTube (Google Search)",
+    "base_url": "https://www.redtube.com",
+    "search_method": "google_site_search",
+    "search_url_template": null,
+    "popularity_multiplier": 0.80,
+    "scoring_weights": {
+      "relevance_weight": 0.70,
+      "rating_weight": 0.10,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  },
+  "XNXX_Scrape": {
+    "name": "XNXX (Scrape)",
+    "base_url": "https://www.xnxx.com",
+    "search_method": "scrape_search_page",
+    "search_url_template": "https://www.xnxx.com/search/{query}/{page}", // CHECK THIS TEMPLATE MANUALLY! Pagination might be 0-based?
+    "results_container_selector": "div.mozaique", // Plausible Structure reuse? VERY LIKELY WRONG - VERIFY MANUALLY!
+    "result_item_selector": "div.thumb-block", // Plausible Structure reuse? VERY LIKELY WRONG - VERIFY MANUALLY!
+    "title_selector": "p.title a", // VERIFY MANUALLY!
+    "video_url_selector": "p.title a[href]", // VERIFY MANUALLY!
+    "thumbnail_selector": ".thumb img[src]", // VERIFY MANUALLY! May use different attributes like data-src.
+    "duration_selector": "span.duration", // VERIFY MANUALLY!
+    "rating_selector": ".rating-good-perc span", // Structure reuse? VERIFY MANUALLY!
+    "views_selector": "span.views", // Need parsing? VERIFY MANUALLY!
+    "author_selector": "span.name", // VERIFY MANUALLY!
+    "next_page_selector": "a.next-page[href]", // VERIFY MANUALLY!
+    "popularity_multiplier": 0.70, // Similar size to XVideos maybe
+    "scoring_weights": {
+      "relevance_weight": 0.60,
+      "rating_weight": 0.25,
+      "views_weight": 0.05,
+      "multiplier_effect": 0.10
+    }
+  },
+  "XNXX_Google": {
+    "name": "XNXX (Google Search)",
+    "base_url": "https://www.xnxx.com",
+    "search_method": "google_site_search",
+    "search_url_template": null,
+    "popularity_multiplier": 0.70,
+    "scoring_weights": {
+      "relevance_weight": 0.70,
+      "rating_weight": 0.10,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  },
+  "XHamster_Scrape": {
+      "name": "XHamster (Scrape)",
+      "base_url": "https://xhamster.com",
+      "search_method": "scrape_search_page",
+      "search_url_template": "https://xhamster.com/search/{query}?page={page}", // CHECK THIS TEMPLATE MANUALLY!
+      "results_container_selector": "div.mozaique", // Common pattern; verify!; VERIFY MANUALLY!
+      "result_item_selector": "div.thumb-list__item", // Name implies list element; VERIFY MANUALLY!
+      "title_selector": "a.thumb-list__item-link", // Might target link around name; VERIFY MANUALLY!
+      "video_url_selector": "a.thumb-list__item-link[href]", // VERIFY MANUALLY!
+      "thumbnail_selector":"div.thumb-list__item_thumb_container' img[src]-data',// Thumb  VERIFY MANUALLY!;
+      "duration_selector": div duration -thumb view// VERiIFY MANUALLY;
+      "rating_selector" div.. thumb list likes value;// Likely wrong verify VERIFY MANUALLY ;
+      "views_selector": div thumb list item views ;// Maybe; Veriify MANUALLY
+ "author_selector":".thumb-list__item__user-label',"VERIFY MANUALLY;' , VERIFY MANUALLY;-thumb';' '];' MANUALLY-VERIFY;',';',', MANUALLY;;;
+  "thumb selector""img" divthumb-" thumb";- container' imgdata-src"-',thumb MANUALLY!;' -thumb';'] MANUALLLY;
+    "thumb"- MANUALLY!-- MANUALLY;,
+   "next_page_selector": a pagina next href-;- likely pager;-;- VERIFY MANUALLY ;;' container>
+        "popularity_multiplier": 0 75," scoring_weights,"
+": } 0. effect
+ "rating_weight":[ relevance-,]multiplier_views ]weight,- "multiplier rating0.",, "effect0."}effect-} "multiplier" relevance-
+      "effect views ]relevance-" "multiplier":[":":[
+":] [ rating ": ]": ,,,"]":-],
+
+ }, },, },},"},},"},",,,} ,] ,]relevance-
+
+  "XHamster_Google": {
+    "name": "XHamster (Google Search)",
+    "base_url": "https://xhamster.com",
+    "search_method": "google_site_search",
+    "search_url_template": null,
+    "popularity_multiplier": 0.75,
+    "scoring_weights": {
+      "relevance_weight": 0.70,
+      "rating_weight": 0.10,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  },
+    "Beeg_Scrape" :
+{ name: "Beeg( Scar")",
+"search_m method"::" BeegScrape"//
+ :[ base ],:[ url:]search-"https:] scrape",,,:,
+  "/": template:-"beeg search"" search",]page," https: k search/="page k search>"} -https:-https= query"
+   results- container_:- "ul item thumb "- likely-"list item"-;VERIFY MANUALLY; ;
+ result selector-"li item thumb "- ;VEiFIY MANUALLY; ; VERIFY thumb -,
+ "title_ selector""= a title",,,-link >a title;-VErIFY MANUALY;,-link ;VERIFY;,
+video URL >"a title link hrerf-,,- ; VERIFY MANUALLY;,- thumb ;
+ thumbnail selector - thumb >a img data: src-,,-;Verifiy MANUALLY ;, rating ;-thumb;, MANUALLY;,
+
+ duraition> selactor-". duraition value"-- Verify; likely; ;, MANUALLY;- ;-, Views ;- - Verify;-;Author Author;- ;-
+ ratngg>selector"-. rating value:"-// -views// likely Verify;- ; views>;- Author-;page rating-- Page;- ; page
+ "rating". rating ; page;- ; Page Author>Author ;- Page ;-- ;- Page ;;/ Likely ;-;/ Likely ;-;/ Page Next ;-//;/ /pager Page ;-/Likely ;-pager Liklyely page ;-Likely PageLikely pager ;// Likely ;-/Likely Likely Page;--;/Likely Likeli Page //Likely ;-Likely Page;/Likly //LikeLikelyLik likLy ;-/LikLinkeyLikely Page;- ;- LinkelyLik Liklikeyke LLinkLikLikeL LinkLyL LikkeLikeyLiikeLike ;-// Link PageLikely; pager Lik ;- PageLikey PageLikeLike;- Linky LikeLiLikLikLikeLLiklikeLike; pager ;;-;-pager likely //p pager; LikeL L LikeLy;;//LikLikLik;-LiklikeLikkLikeLink /LinkLikeLikeLikeL / PageLikeLikeke ;-</ page LikeLikLink </Like Likely LikePagekLik LikLikeLLPageLike Liklike / Link lik> PageLikLkLikeLikLikeLikeLike;//; LikeLik PageLikLike LikLike;<Like pager LikLikeLik; LikLinkLinkLink<L LikLikLikLk Page pageLik;-LikLikLike;; LikeLink;LikliklikLik;; page;LikLikLikLikeLinkk >PageLike;//;/Pager; Page LikeLik>Pager Page; Lik; >Pager PagPger;PagPage LikLik PagPager PaggerPage;; Pge Lik Pager >;-PPage<>;LikLik pLik pager >PageLikely Likely Pag pLikLik Lik >p; Page;Likp> Page page >pPageLikeLikely;/p pager;Lik;-LikLikLLik >pageP;;;Pag>PPagLikeLikeL >Pager Pag >PagPag Lik;p; Page; </ pager page >>PagP page>pager Lik page ;;>>Lik p >>p</><p //pLikLike </</Lik p pager pager >>><PPageLikLikeLikLiker //Likpager page >>;- >/>/>page >pager Pag Page >>>LikPage / PPage >pLik LikLikLlikelykLike;LikLike likLLik L pageLikePageLikLyLikeLikL p//LikLiklikeLikLikLikeLikeP Page </pager>pPageLikeP;PageLikeLikeLikeLikelyk >/>PageLikePageLikeL PPageLikePageLikelyLikel PPagePageL </PageP>
+  next_page_ selector:":] a next- pagehref"-- Ppage next;-likely verify; Likely pager likely pager ;--// Likely // likelihood pager likely PageLik-;
+ multiplier- effect":[ populartiiyty-:" 1.0.": } {
+":[
+  "relevance0."},] weight} weights ",: [-effect] [:]:":":[ rating },:",":[":[ multiplier- rating"}
+
+ multiplier-},]}":multiplier multiplier }:}effect,,:],,],:]:]]]
+
+ } ] effect"}]multiplier"}
+
+  ,,,,,:, effect"-]},],]}
+
+
+ } ]multiplier]}
+
+ },}":,,,,:",multiplier"}
+
+,,,","}effect" }, , ] "} multiplier} }]}
+
+
+]effect,,}
+
+
+
+]}, ],,]},],,,,,,,,] effect"]
+
+  "Beeg_Google": {
+    "name": "Beeg (Google Search)",
+    "base_url": "https://beeg.com",
+    "search_method": "google_site_search",
+    "search_url_template": null,
+    "popularity_multiplier": 1.0, // Popularity is relative, adjust as needed
+    "scoring_weights": {
+      "relevance_weight": 0.70,
+      "rating_weight": 0.10,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  },
+  "SpankBang_Scrape": {
+    "name": "SpankBang (Scrape)",
+    "base_url": "https://spankbang.com",
+    "search_method": "scrape_search_page",
+    "search_url_template": "https://spankbang.com/s/{query}/{page}/", // CHECK THIS TEMPLATE MANUALLY! Pagination might be 1-based?
+    "results_container_selector": "div.video-list", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "result_item_selector": "div.video-item", // Plausible, BUT VERY LIKELY WRONG - VERIFY MANUALLY!
+    "title_selector": "a.n", // Terse Class; Likely Requires an `a` tag; ; - VERIFY MANUALLY; ;
+    "video_url_selector".. video item > a href // Plauislb, BUT VVERY LIKLEY WRING ;VERIFY MANUALLY;
+   thumb nail selector div =. thumb img dat asrc; VERiIFY MANUALLY!; attribute; verify src ;
+   duation seector=".l"-- terse likely;- require;- context ;VEri FY MANALYL; `-;-;-`; verify ;; verify
+ Rating> Views;- ;rating ;- ; Likely Verify;- / Verify Author;- ; page likely Verify;/likely Likly Page ;/Liek Page ;--LikLikLikLikLL Page; LikLikeLikely page LikLyLik page-;PagLik Likely;- LikLike PageLikLikLi; Author LikLikLikLik;LLyLyLikLikePagLLyLyLyL LLy Pag page P Page;//PagePagLi >;Lik >LLPag Pag Pag;; Pag Pag; >Lik Pag page page Pag>Page >>PagPage >>PagePagPag PagpPage>p P>>;- >; pagePagLikP </ pag Pag PagLikPag >>p >>;}p> pagerPag>PagPagPag lik PagLik Page PaglikelyPag Pag Pag </PageLike Pag Pag>pP>page pagePager //Page like Page >;>P></Pag> Pag Like;p>LikPage>pPagePag<Lik page ;;>liklikL />;;pPage p PLikLike Page;;LikPageLik pPag;;//PagePage Page ;;>> Lik pagePage >>;/ ;>/// // pP><Pag p< <;Lik;/ likpPagp pager p> Lik >Lik; > p Pag p;// Pag>>pPag P pager < p< Pag Pag </PageLik pageLL p >p pager;;p Pag</<><<Pag<< pLikp PagPageLikeL ;> </ PagP p</>;liklik< p ;LikLike page</ Pag> / L /Pag ;like<LL page > </>; Pag</>PagpLikePagek Page Pager Page >;//>///><P PagPage<>>></ Page ;><P<PagLikLike>Pag lik Page </>/Page </P> <Page> // /;<Pag> </Pager>/LikPage<PageLikePage</Like<Page </pPagpLikPagePage <PPageLikLikeL Page </>< < < >Pag >pPagPage<PageP Page >;</< Likely Pagp /;/Page</P Pagp ;Pager Page >//Page;</</ PPageL Like // likLikeLikLik p Page likLik PagerLLik / < /Lik Page /</LikePag></Lik < pag</ Pag page;/</Lik p PagLiklikely LLik</ PagekLLikLike//Lik;</ Lik ;>PagLikLike; Pag pLik L<LikeLike page Likely >;/Lik p PageL pPPage >likely;/ Likely >/pPager Lik Page<P Page> </P p </>;;/Like PagPagePag >//Lik Pag Lik</ Lik;/ <PagPage >Lik P> likp ;;>;>likp>; PagLikLik pP P p>>L>>PagPageLikLy </LikLik> ;;;;LikLikLLLL page >; >Page likeLL>; LikeLiked;-L PagLLikePage pagerP</Page;/LikLy </>; likLik> /like Page;< likeLik>>;LL Page</Pag LikLik>;> pager/ Pager LikLike page;<//Pager<<Pag Lik P PageLikLik; Page lik>PagLike likePage;/ <;/</pager p Page <Lik Pager>>;p ;Pager>/ like page>< < </Page>>pager;<LikPage < likpPagerLikL> < p >< <L ///>PagLikeLik pagerLik page</ LikeLikelyPage >>lik pPagPageLik pager / <PageL / Like Likely< /Like>< < P > P><</ Page >pagerLik > /<> </ </ PPage likp Page P>> </ P Page P>>;>>></ P Page<Lik >Pag p Page / lik></ Page</ p > Lik PageLikLik >likPage LL Lik Liklik </Lik Lik < Likely</ PagLike P Pag >Lik ;> </ likeP >;LikLikPage LikelyP P Pag LikLik>;;>LikLike Lik PageLik p Likp PageLik ;Page> pLike pageLik page p Page<P</p pager ;> PagLikPage <PagePagePP pageLL<LLike Paglik PageL <likeLpLikePagL like p Page ;;><p>LikLikePage > p Page Pag> <LLLikLikLik Pagp ;;LLLikPagP P P;PagePage;</ < p< p page L Pag; pPage;Page </p Lik LL Pag LLL Pag >p<<Pag ; Page ///><p>></ L Page///; p pager Pag>> L PagePag Pag PagPage >>>>;; p>;> ;;>>p >>; ///p << //;>><>;>; <<p////;p>
+
+] Popular multiplier-:" 1effect"1.. weights scoring:}1.- } scoring:}
+ rating rating"" :[1.1."]}views-,weights ]":1.--views "}{ effect}
+
+]},:[ effect" relevance weight:,:",:,,",[ },:],]}":multiplier:weight ": effect:"},]],:}
+
+
+] rating },]"" multiplier":]},,:} effect":]}] ]],multiplier] ]],multiplier },,, ],"}], multiplier:} ""],,:}]]},,,,]:,:, weight "-]: ,,,","}":"],,],,,}weight} ", , views ]":]],,multipliermultiplier ] ],"}]]]]}
+
+ multiplier]effect"]} ],weight" } ],"} ],,]}multiplier"}
+
+,,]":,,,,,"}],,} effect}] ],],,] ]weight },} } ,,,, ,:",} ]}
+
+ , ]views weight" ]views }""],multiplier ,"]]}, ","::",],,"}] ] ] weight multiplier" ,,views ,],,}views multiplier]],
+
+]weightweight},:"} ,},",]"}
+
+]
+
+
+"},",", },multiplier }"],,} multiplier,]
+
+},multiplier,",multiplier" ,] ]}
+
+],effect]]" ],,, ],,"weight"},"weight"}
+
+
+
+,,,weight}","] ,"] ,, effect", }
+
+,] ] }""],
+
+ ,},
+  ",Google :SpankBang Google": Search:{{"base_url "" Search"name:", :[ search-] popularity_-: ,] "_sp"," :[1.,"" spankBang Search"] (
+  url"::,method""multiplier "site-- :[ https:[ com" (} weight"} url template" google":[null ]1.-:}weights }]:]:] views relevance }] multiplier:",, effect ,]effect },:
+},:",}rating},,:"],,,,]} views }]
+}, ]weight,"]"} weight:",:]] multiplier" },:",:}views ],]:,],:"
+
+
+ ]views weight,,weight"]weight,]
+
+
+
+ ]
+
+
+  "": Porno"Scrape -"Scrape :{( Scrape":" porn":{",,
+" search:-:" method":"scrape", ]template:]"}search" search:-"[} name:-:": porn"} page":"base/=",]url"
+ page:" /url template--"search:" /":[ html":" https:{query}":[ =query,:]"/":[ porn page"],:"},"]https"" results], search"],
+ result":[ selectora item"_:-"[ div:",] class":[ "thumb -"-;- verify Likely;-Likely MANUALLY!;' selector"
+
+ title-[ ]selector". title:[ ]a":[ ] verify link>;[-:- ;VERIFY MANUALy; ; selector"
+video _ :[ ]a":[ title_ ];: verify link>[hre f-, VERIFY MANUALLY;- -, selector>"
+ thumbnal> _thumb:[ ] div>: img:[ dat src;, attribute - VERIFY;-MANUALLY"!;- rating>src;,MANUALLY; thumb>
+ duraitiont>" span-" duraition:"-;-Verify // Verify;- MANUALLY"!;- likelyViews-; MANUALLY Views;-/ rating likely//likely author- ;Likely ;-;- Verify
+ views likely;-Author ;-Author;- Pge LikelyLikely page likelihood/ ;p pager-/ / ;-/ /LikLyLik Page ;-;/Lik pagelikely / page <Lik;-Lik;-LikLL LL L P P P PLik;-< PagLik >;- <Pag >;}Page >Page <PPage; P >Lik pPag>PagPage pag> Pag page >;p;;;;//>>likePag p >>;-// Lik >;;<Page Lik>Pp;<;pPage LikLikLLP /> /Pagep;;>> </ pageLik ///>>pPag / pagePagLik> Page pageL;>>/// / P page Page;//Pag;LikeL Page >/P> /// Page Pag<LikL// >/Page pPage /p P Page < pag Lik like>;>PageLikP pager>PagPage>></> PageL >Page like<L Page PageLike;//>>; p>Page></<<PageLik / / << </P / PagePage < /p <P p page PagL Lik / page </ p Page;;p / Page //>>>;likePage ;> p Page >/ PagePage p Page >>;//>; page Pag pager>PageLikL >pLL >>>like Page></</ page/ >>;</ PPageLik </ page P Page >> Page Page </>;/></>; page>likLikLikeLikeP/> </;;</ page;</L p < pager Page like LikLLlikeLikLikeLikePagPageP> Pagep p PagLPage p < </ // >;>; </ lik>/ > < Lik Pag>< PagPagePag p LL LL LL LikPagPag;;Lik Pag >Pag Lik LlikPage L <L LL LlikeL Pag>pPagPage>Page>;// > >; p>
+
+ } score weight popularity_:" 1weight" "0. ":{,,-weights views" multiplier":"[ :}
+:, effect:]" relevance0."} scoring: rating:[ multiplier], },,,,:
+] ] "" },:multiplier"],:",} ]:" ,,
+
+]":,,:",effect }"::] ,,
+
+,,},},effect" ]],,",, ]},
+
+
+]},
+  "": Porno" Google"-"Search" -" :{( Search":" google-" name:":" :[( :[ base], "_):( Search"] search"url"
+ url":" popularity"::":[ null"] 1.:",:"::",}google":[ multiplier- ] [ ] , { weights https"} :]1.:[ }, "]]relevance views:}] }] effect,,
+ ]multiplier} url weight,:,:",:] multiplier"}
+} ],,:}weight views}"] }]:}views ],":}":,,],:",,:}]:weight}"] ]
+
+
+
+],weight"]},],"}
+
+
+ ]]]
+
+
+    "]Dan","s:" Scrape-"Movies _scrape:[ Scrape":{" name"::{ Dan",{"] search_ movies",{", Movies( search search"]
+"base_url"""::":,,:":[ scrape_" method"],,, "template_]https:// page:]":[ q:":{ query} dans":[ ],
+ search results" :[movies"],:[ div]:[ results"],:[ list "-,- verify;-;-MANUALLY;, selector>"
+ results<selectoritem> class list:[ video ] :[ ],verify;-MANUALLY!- video>selector"
+ title[selector "]->h[ a ] title";;: :[ verify-;-MANUALLY;, title"_selector>" link>; likely/ Likely> link>Likely
+ vide [ "]->a [ title][hrrf-- link>; likely: Verify;MANUALLY,- MANUALLY>"
+video title >a >; likely>; likely/-;- video>
+video>; - video>/;-;/likely>/LikLik;-Likely LikeLikLi;>-LikLik ;//Lik /P PageLikLike Page ;- like Page Likely
+likeLikL page</Page;- ;/pLL p >; pagePage</Like page <Page Pag PagePag Lik pPPage P page >/> ; Page p>Page pageP > Pag</ PagPPPagPagePag lik p >PagLikeLL > PagLik like lik PPage; Page LikeLike Page<<L > >L pageLL Page /</ >/ L P / p Lik <</ <PagP Page  Page;< // PagLlik Page> Pag / page <Page ></ pPPage p pagepP </PageLikPageL Page /;> PagePagLL;>PPage>> </L <Pag Pag p pagpLik /</Page PagPPL </Page Pag ;> L <><;//;</P </ <P </ </ <Page >< ; >Page p< Pag Pag </ Pag pager PagLikLL;lik page</Page p Likely like>;></ <PageLik></<> p L> L >like </ PLik pLike L </ / > ; PageL ;;</ likePager;pP pagPagLik Page LL >< Pagep / LikePageLike<P Pag>Lik; pager p PagLike p PagepPager ;;Lik pageLikeLikPagLike ;Lik pager Pagin lik pagekPag> Page page>>Pager pPagp</>;<pL>> p> like pagePagerPag> < / Pag page<Pager< Pager ///Page likeLikeLikely</ p; pLikPager PageP p p <like  >
+ } effect next:- page selector-" scoring_ popularity_:{1. weight":{,-":1.":[ ":[]} rating-:]multiplier":views-[ :
+":]":,,[1. ] relevance" weights:",,,,}multiplier:,,,:, effect":[ multiplir]"}],]}
+
+effect",[},], rating },:,:,",,,weight},, },]}multiplier}"]
+
+
+
+], },},",]} }, ]":"]
+
+],,,
+
+
+
+],:] multiplier}"},,,,}
+
+  "}," Google SearchDans":"Movies ":{(name":" Dan MoviesSearch""": Search"]{(": [( Search"]"_":[ goo" (search_:[ urltemplate:[ method"]base:":"null"],[ url"_":[ ]site"] [ }, { goo"]https 1."]:,,"}],,} scoring: popular],:}":multiplier":effect] views:]weights:[ rating":] ": weight ] effect:]":weight"]] relevance:
+
+
+effectviews "]":]}weight,}] :] effect}", ],]"},} multiplier":]},"}
+
+] multiplier,:] :"]
+
+}

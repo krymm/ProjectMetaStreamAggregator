@@ -1,0 +1,150 @@
+{
+    "search_queries": [
+        {
+            "name": "Basic Search",
+            "query": "test video",
+            "description": "Simple query to test basic search functionality"
+        },
+        {
+            "name": "Empty Query",
+            "query": "",
+            "description": "Empty query to test error handling"
+        },
+        {
+            "name": "Special Characters",
+            "query": "test & video + search",
+            "description": "Query with special characters to test encoding/decoding"
+        },
+        {
+            "name": "Long Query",
+            "query": "This is a very long search query with multiple words to test how the system handles longer search terms and phrases that might need proper parsing",
+            "description": "Long query to test max length handling"
+        },
+        {
+            "name": "Common Video Terms",
+            "query": "hd quality video 1080p",
+            "description": "Common video terms to test relevance ranking"
+        },
+        {
+            "name": "Duplicate Content",
+            "query": "popular video",
+            "description": "Query likely to return duplicates across sites"
+        },
+        {
+            "name": "Edge Query",
+            "query": "zzzxxxyyy999",
+            "description": "Unlikely query to test handling of no results"
+        },
+        {
+            "name": "Script Tag",
+            "query": "<script>alert('XSS')</script>",
+            "description": "Malicious input to test input sanitization"
+        }
+    ],
+    "site_combinations": [
+        {
+            "name": "Single Site",
+            "sites": ["example_site1"],
+            "description": "Test with just one site"
+        },
+        {
+            "name": "Multiple Sites",
+            "sites": ["example_site1", "example_site2"],
+            "description": "Test with multiple sites"
+        },
+        {
+            "name": "All Sites",
+            "sites": ["example_site1", "example_site2", "example_site3", "example_site4"],
+            "description": "Test with all sites"
+        },
+        {
+            "name": "No Sites",
+            "sites": [],
+            "description": "Test with no sites selected"
+        },
+        {
+            "name": "Mix of Scrape and API",
+            "sites": ["example_site1", "example_site3"],
+            "description": "Test with mix of scrape and API-based sites"
+        }
+    ],
+    "api_keys": {
+        "google": {
+            "api_key": "YOUR_GOOGLE_API_KEY",
+            "search_engine_id": "YOUR_GOOGLE_SEARCH_ENGINE_ID"
+        },
+        "bing": {
+            "api_key": "YOUR_BING_API_KEY"
+        },
+        "duckduckgo": {
+            "api_key": null
+        }
+    },
+    "scoring_weight_tests": [
+        {
+            "name": "Relevance Heavy",
+            "weights": {
+                "relevance_weight": 0.80,
+                "rating_weight": 0.10,
+                "views_weight": 0.05,
+                "multiplier_effect": 0.05
+            }
+        },
+        {
+            "name": "Rating Heavy",
+            "weights": {
+                "relevance_weight": 0.20,
+                "rating_weight": 0.60,
+                "views_weight": 0.10,
+                "multiplier_effect": 0.10
+            }
+        },
+        {
+            "name": "Views Heavy",
+            "weights": {
+                "relevance_weight": 0.20,
+                "rating_weight": 0.20,
+                "views_weight": 0.50,
+                "multiplier_effect": 0.10
+            }
+        },
+        {
+            "name": "Site Heavy",
+            "weights": {
+                "relevance_weight": 0.20,
+                "rating_weight": 0.20,
+                "views_weight": 0.10,
+                "multiplier_effect": 0.50
+            }
+        }
+    ],
+    "invalid_configurations": [
+        {
+            "name": "Bad CSS Selector",
+            "site": "example_site1",
+            "field": "result_item_selector",
+            "value": ".non-existent-class",
+            "expected_behavior": "Should handle gracefully and continue with other sites"
+        },
+        {
+            "name": "Invalid URL Template",
+            "site": "example_site1",
+            "field": "search_url_template",
+            "value": "https://example.com/broken?q={queryx}",
+            "expected_behavior": "Should detect and report URL template error"
+        },
+        {
+            "name": "Empty Base URL",
+            "site": "example_site2",
+            "field": "base_url",
+            "value": "",
+            "expected_behavior": "Should skip site with warning"
+        },
+        {
+            "name": "Invalid API Key",
+            "setting": "google_api_key",
+            "value": "invalid_key_12345",
+            "expected_behavior": "Should report API error but continue with other sites"
+        }
+    ]
+}

@@ -1,0 +1,64 @@
+{
+  "ExampleSitePorn": {
+    "name": "ExampleSitePorn",
+    "base_url": "https://www.examplesiteporn.com",
+    "search_method": "scrape_search_page",
+    "search_url_template": "https://www.examplesiteporn.com/search?q={query}&page={page}",
+    "results_container_selector": "ul.videos.search-video-thumbs",
+    "result_item_selector": "li.videoBox",
+    "title_selector": "span.title a",
+    "video_url_selector": "span.title a[href]",
+    "thumbnail_selector": "div.thumb img[src]",
+    "duration_selector": "var.duration",
+    "rating_selector": "div.rating-container .value",
+    "views_selector": "span.views var",
+    "author_selector": ".username a",
+    "next_page_selector": "li.next a[href]",
+    "popularity_multiplier": 0.8,
+    "scoring_weights": {
+      "relevance_weight": 0.60,
+      "rating_weight": 0.25,
+      "views_weight": 0.05,
+      "multiplier_effect": 0.10
+    }
+  },
+  "GoogleSearchExample": {
+    "name": "GoogleSearchExample",
+    "base_url": "https://www.examplexxx.net",
+    "search_method": "google_site_search",
+    "search_url_template": null,
+    "popularity_multiplier": 1.0,
+    "scoring_weights": {
+      "relevance_weight": 0.70,
+      "rating_weight": 0.10,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  },
+  "BingSearchExample": {
+    "name": "BingSearchExample",
+    "base_url": "https://www.adultxxxsite.com",
+    "search_method": "bing_search",
+    "search_url_template": null,
+    "popularity_multiplier": 1.2,
+    "scoring_weights": {
+      "relevance_weight": 0.65,
+      "rating_weight": 0.15,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  },
+  "DuckDuckGoExample": {
+    "name": "DuckDuckGoExample",
+    "base_url": "https://www.nichexxxvideos.net",
+    "search_method": "duckduckgo_search",
+    "search_url_template": null,
+    "popularity_multiplier": 1.5,
+    "scoring_weights": {
+      "relevance_weight": 0.60,
+      "rating_weight": 0.20,
+      "views_weight": 0.10,
+      "multiplier_effect": 0.10
+    }
+  }
+}

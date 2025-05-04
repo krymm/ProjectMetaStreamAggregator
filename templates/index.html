@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaStream Aggregator</title>
+    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header>
+            <div class="header-logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="MetaStream" class="logo-image">
+                <h1>MetaStream Aggregator</h1>
+            </div>
+            <div class="header-buttons">
+                <button id="cache-button" class="button small">Cache</button>
+                <button id="settings-button" class="button">Settings</button>
+                <button id="help-button" class="button">Help</button>
+            </div>
+        </header>
+        
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Left Panel: Search Controls -->
+            <div class="search-panel">
+                <div class="search-controls">
+                    <input type="text" id="search-input" placeholder="Enter search query...">
+                    <button id="search-button" class="button primary">Search</button>
+                    <button id="reset-button" class="button">Reset</button>
+                </div>
+                
+                <div class="search-options">
+                    <div class="option-item">
+                        <input type="checkbox" id="use-cache" checked>
+                        <label for="use-cache">Use Cache</label>
+                    </div>
+                    <div class="option-item">
+                        <input type="checkbox" id="check-links" checked>
+                        <label for="check-links">Check Links</label>
+                    </div>
+                </div>
+                
+                <div class="site-selection">
+                    <h2>Sites to Search</h2>
+                    <div class="site-actions">
+                        <button id="select-all-sites" class="button small">Select All</button>
+                        <button id="select-none-sites" class="button small">Select None</button>
+                    </div>
+                    <div id="site-list-container"></div>
+                </div>
+            </div>
+            
+            <!-- Right Panel: Results Area -->
+            <div class="results-area">
+                <div id="summary-container"></div>
+                
+                <!-- Valid Results -->
+                <div class="results-section" id="results-section">
+                    <h2>Results</h2>
+                    <div id="results-container"></div>
+                    <div id="pagination-container"></div>
+                </div>
+                
+                <!-- Broken Results (Collapsible) -->
+                <div class="results-section broken-section">
+                    <h2 class="collapsible">Broken Links <span id="broken-count"></span></h2>
+                    <div id="broken-results-container" class="collapsed"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Player Area -->
+        <div class="player-area">
+            <div class="player-header">
+                <h2>Video Players</h2>
+                <div class="player-controls">
+                    <button id="minimize-players" class="button small">Minimize</button>
+                    <button id="close-all-players" class="button small secondary">Close All</button>
+                </div>
+            </div>
+            <div class="players-container">
+                <div class="player-slot">
+                    <button class="close-player" data-player-id="player-1">×</button>
+                    <iframe id="player-1" src="about:blank"></iframe>
+                </div>
+                <div class="player-slot">
+                    <button class="close-player" data-player-id="player-2">×</button>
+                    <iframe id="player-2" src="about:blank"></iframe>
+                </div>
+                <div class="player-slot">
+                    <button class="close-player" data-player-id="player-3">×</button>
+                    <iframe id="player-3" src="about:blank"></iframe>
+                </div>
+                <div class="player-slot">
+                    <button class="close-player" data-player-id="player-4">×</button>
+                    <iframe id="player-4" src="about:blank"></iframe>
+                </div>
+            </div>
+            <div class="player-list-panel">
+                <h3>Active Videos</h3>
+                <div id="active-players-list"></div>
+            </div>
+        </div>
+        
+        <!-- Loading Indicator -->
+        <div id="loading-indicator" class="hidden">
+            <div class="spinner"></div>
+            <p>Searching, please wait...</p>
+        </div>
+        
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <span id="close-settings" class="close">&times;</span>
+                <h2>Settings</h2>
+                
+                <form id="settings-form">
+                    <div class="settings-section">
+                        <h3>Search APIs</h3>
+                        
+                        <div class="form-group">
+                            <label for="google-api-key">Google API Key:</label>
+                            <input type="password" id="google-api-key" name="google_api_key">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="google-search-engine-id">Google Search Engine ID:</label>
+                            <input type="text" id="google-search-engine-id" name="google_search_engine_id">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="bing-api-key">Bing API Key:</label>
+                            <input type="password" id="bing-api-key" name="bing_api_key">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="duckduckgo-api-key">DuckDuckGo API Key:</label>
+                            <input type="password" id="duckduckgo-api-key" name="duckduckgo_api_key">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Display Options</h3>
+                        
+                        <div class="form-group">
+                            <label for="results-per-page">Results Per Page:</label>
+                            <input type="number" id="results-per-page" name="results_per_page_default" min="10" max="500">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="results-layout">Results Layout:</label>
+                            <select id="results-layout" name="results_layout">
+                                <option value="grid">Grid</option>
+                                <option value="list">List</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Caching Options</h3>
+                        
+                        <div class="form-group">
+                            <label for="cache-expiry-minutes">Cache Expiry (minutes):</label>
+                            <input type="number" id="cache-expiry-minutes" name="cache_expiry_minutes" min="1" max="1440">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Search Options</h3>
+                        
+                        <div class="form-group">
+                            <label for="max-pages-per-site">Max Pages Per Site:</label>
+                            <input type="number" id="max-pages-per-site" name="max_pages_per_site" min="1" max="10">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="check-links-default">Check Links by Default:</label>
+                            <select id="check-links-default" name="check_links_default">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Ranking Weights</h3>
+                        
+                        <div class="form-group">
+                            <label for="relevance-weight">Relevance Weight:</label>
+                            <input type="number" id="relevance-weight" name="scoring_weights.relevance_weight" min="0" max="1" step="0.1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="rating-weight">Rating Weight:</label>
+                            <input type="number" id="rating-weight" name="scoring_weights.rating_weight" min="0" max="1" step="0.1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="views-weight">Views Weight:</label>
+                            <input type="number" id="views-weight" name="scoring_weights.views_weight" min="0" max="1" step="0.1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="multiplier-effect">Site Multiplier Effect:</label>
+                            <input type="number" id="multiplier-effect" name="scoring_weights.multiplier_effect" min="0" max="1" step="0.1">
+                        </div>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h3>Advanced Options</h3>
+                        
+                        <div class="form-group">
+                            <label for="ollama-api-url">Ollama API URL:</label>
+                            <input type="text" id="ollama-api-url" name="ollama_api_url">
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="button primary">Save Settings</button>
+                        <button type="button" id="reset-default-settings" class="button">Reset to Defaults</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Cache Modal -->
+        <div id="cache-modal" class="modal">
+            <div class="modal-content">
+                <span id="close-cache" class="close">&times;</span>
+                <h2>Cache Management</h2>
+                
+                <div id="cache-stats-container" class="cache-section">
+                    <h3>Cache Statistics</h3>
+                    <div id="cache-stats"></div>
+                </div>
+                
+                <div class="cache-section">
+                    <h3>Cache Options</h3>
+                    <div class="cache-actions">
+                        <button id="clear-all-cache" class="button secondary">Clear All Cache</button>
+                        <button id="clear-current-search-cache" class="button" disabled>Clear Current Search Cache</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help/About Modal -->
+        <div id="help-modal" class="modal">
+            <div class="modal-content">
+                <span id="close-help" class="close">&times;</span>
+                <h2>About MetaStream Aggregator</h2>
+                
+                <div class="help-section">
+                    <p>
+                        MetaStream Aggregator (MSA) is a locally-hosted web application designed to search, discover, aggregate, 
+                        and curate adult (XXX) video content from a wide array of configurable online streaming sources.
+                    </p>
+                    
+                    <h3>Features</h3>
+                    <div class="feature-grid">
+                        <div class="feature-item">
+                            <h4>Multi-Source Search</h4>
+                            <p>Search across multiple sites simultaneously</p>
+                        </div>
+                        <div class="feature-item">
+                            <h4>Result Aggregation</h4>
+                            <p>Combine and normalize results from different sources</p>
+                        </div>
+                        <div class="feature-item">
+                            <h4>Content Ranking</h4>
+                            <p>Proprietary algorithm to rank content based on relevance, ratings, views, and site popularity</p>
+                        </div>
+                        <div class="feature-item">
+                            <h4>Duplicate Detection</h4>
+                            <p>Identify and consolidate identical videos from different sources</p>
+                        </div>
+                        <div class="feature-item">
+                            <h4>Link Validation</h4>
+                            <p>Verify links are valid before presenting them</p>
+                        </div>
+                        <div class="feature-item">
+                            <h4>Multi-Video Player</h4>
+                            <p>Stream up to four videos simultaneously</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="help-section">
+                    <h3>Documentation</h3>
+                    <p>Comprehensive documentation is available in the application's <code>docs</code> directory:</p>
+                    <ul>
+                        <li><strong>Site Configuration Guide</strong> - How to configure search sites</li>
+                        <li><strong>Settings Configuration Guide</strong> - Configuring application settings</li>
+                        <li><strong>Ranking Algorithm Documentation</strong> - Detailed explanation of the ranking system</li>
+                        <li><strong>Search API Guide</strong> - Guide to the multiple search API options</li>
+                        <li><strong>Caching System Documentation</strong> - Details on the caching system</li>
+                        <li><strong>Developer Guide</strong> - Guide for developers extending the application</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <h3>Version Information</h3>
+                    <p>MetaStream Aggregator v1.0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Core JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

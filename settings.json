@@ -1,0 +1,18 @@
+{
+  "google_api_key": null,
+  "google_search_engine_id": null,
+  "bing_api_key": null,
+  "duckduckgo_api_key": null,
+  "ollama_api_url": "http://localhost:11434/api/generate",
+  "results_per_page_default": 100,
+  "default_search_sites": ["ExampleSitePorn"],
+  "scoring_weights": {
+    "relevance_weight": 0.50,
+    "rating_weight": 0.30,
+    "views_weight": 0.10,
+    "multiplier_effect": 0.10
+  },
+  "cache_expiry_minutes": 10,
+  "max_pages_per_site": 1,
+  "check_links_default": true
+}

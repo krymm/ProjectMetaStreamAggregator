@@ -1,0 +1,278 @@
+{
+  "config": {
+    "files_checked": [
+      {
+        "name": "sites.json",
+        "exists": true,
+        "size_bytes": 2009,
+        "valid_json": true,
+        "structure_valid": true,
+        "content_summary": {
+          "site_count": 4,
+          "site_names": [
+            "ExampleSitePorn",
+            "GoogleSearchExample",
+            "BingSearchExample",
+            "DuckDuckGoExample"
+          ],
+          "search_methods": {
+            "scrape_search_page": 1,
+            "google_site_search": 1,
+            "bing_search": 1,
+            "duckduckgo_search": 1
+          }
+        },
+        "issues": [],
+        "modified": "Sat May  3 08:39:58 2025"
+      },
+      {
+        "name": "settings.json",
+        "exists": true,
+        "size_bytes": 610,
+        "valid_json": true,
+        "structure_valid": true,
+        "content_summary": {},
+        "issues": [
+          "Google Search is configured for sites but API key/CSE ID is missing"
+        ],
+        "modified": "Sat May  3 09:40:43 2025"
+      }
+    ],
+    "issues": [
+      "settings.json: Google Search is configured for sites but API key/CSE ID is missing"
+    ],
+    "recommendations": [
+      "Add Google API key and Search Engine ID to settings.json"
+    ]
+  },
+  "scraper": {
+    "query": "test",
+    "sites_tested": [
+      {
+        "name": "ExampleSitePorn",
+        "search_method": "scrape_search_page",
+        "result_count": 0,
+        "success": true,
+        "duration_seconds": 1.13,
+        "issues": [
+          "No results found"
+        ],
+        "sample_results": []
+      },
+      {
+        "name": "GoogleSearchExample",
+        "search_method": "google_site_search",
+        "result_count": 0,
+        "success": true,
+        "duration_seconds": 0.0,
+        "issues": [
+          "Missing Google API key or CSE ID in settings",
+          "No results found"
+        ],
+        "sample_results": []
+      },
+      {
+        "name": "BingSearchExample",
+        "search_method": "bing_search",
+        "result_count": 0,
+        "success": true,
+        "duration_seconds": 0.0,
+        "issues": [
+          "Unsupported search method: bing_search",
+          "No results found"
+        ],
+        "sample_results": []
+      },
+      {
+        "name": "DuckDuckGoExample",
+        "search_method": "duckduckgo_search",
+        "result_count": 0,
+        "success": true,
+        "duration_seconds": 0.0,
+        "issues": [
+          "Unsupported search method: duckduckgo_search",
+          "No results found"
+        ],
+        "sample_results": []
+      }
+    ],
+    "issues": [
+      "ExampleSitePorn: No results found",
+      "GoogleSearchExample: Missing Google API key or CSE ID in settings",
+      "GoogleSearchExample: No results found",
+      "BingSearchExample: Unsupported search method: bing_search",
+      "BingSearchExample: No results found",
+      "DuckDuckGoExample: Unsupported search method: duckduckgo_search",
+      "DuckDuckGoExample: No results found"
+    ],
+    "recommendations": []
+  },
+  "ranking": {
+    "query": "test",
+    "results_tested": 10,
+    "issues": [],
+    "recommendations": [],
+    "duration_seconds": 0.0003,
+    "success": true,
+    "ranked_count": 10,
+    "rankings": [
+      {
+        "position": 1,
+        "title": "Test Result 8 relevant test",
+        "score": 2.7447043302864444,
+        "relevance_score": 4.5,
+        "site_rating": 0.8999999999999999,
+        "views": 3000,
+        "site": "DuckDuckGoExample",
+        "has_alternates": false
+      },
+      {
+        "position": 2,
+        "title": "Test Result 7",
+        "score": 2.661430556242172,
+        "relevance_score": 4.5,
+        "site_rating": 0.8999999999999999,
+        "views": 2000,
+        "site": "BingSearchExample",
+        "has_alternates": false
+      },
+      {
+        "position": 3,
+        "title": "Test Result 4",
+        "score": 2.6537497660261153,
+        "relevance_score": 4.5,
+        "site_rating": 0.6,
+        "views": 4000,
+        "site": "DuckDuckGoExample",
+        "has_alternates": false
+      },
+      {
+        "position": 4,
+        "title": "Test Result 9 relevant test",
+        "score": 2.565033114957707,
+        "relevance_score": 4.5,
+        "site_rating": 0.8999999999999999,
+        "views": 4000,
+        "site": "ExampleSitePorn",
+        "has_alternates": false
+      },
+      {
+        "position": 5,
+        "title": "Test Result 6 relevant test",
+        "score": 2.511113489071966,
+        "relevance_score": 4.5,
+        "site_rating": 0.6,
+        "views": 1000,
+        "site": "GoogleSearchExample",
+        "has_alternates": false
+      },
+      {
+        "position": 6,
+        "title": "Test Result 3 relevant test",
+        "score": 2.4826842065639743,
+        "relevance_score": 4.5,
+        "site_rating": 0.3,
+        "views": 3000,
+        "site": "BingSearchExample",
+        "has_alternates": false
+      },
+      {
+        "position": 7,
+        "title": "Test Result 5 relevant test",
+        "score": 2.4794,
+        "relevance_score": 4.5,
+        "site_rating": 0.6,
+        "views": 5000,
+        "site": "ExampleSitePorn",
+        "has_alternates": false
+      },
+      {
+        "position": 8,
+        "title": "Test Result 10",
+        "score": 2.44,
+        "relevance_score": 4.5,
+        "site_rating": 0.3,
+        "views": 5000,
+        "site": "GoogleSearchExample",
+        "has_alternates": false
+      },
+      {
+        "position": 9,
+        "title": "Test Result 2 relevant test",
+        "score": 2.4292456433746783,
+        "relevance_score": 4.5,
+        "site_rating": 0.3,
+        "views": 2000,
+        "site": "GoogleSearchExample",
+        "has_alternates": false
+      },
+      {
+        "position": 10,
+        "title": "Test Result 1",
+        "score": 2.3726912192905263,
+        "relevance_score": 4.5,
+        "site_rating": 0.3,
+        "views": 1000,
+        "site": "ExampleSitePorn",
+        "has_alternates": false
+      }
+    ],
+    "duplicate_groups": {},
+    "duplicate_count": 0
+  },
+  "link_checker": {
+    "urls_tested": 5,
+    "issues": [],
+    "recommendations": [],
+    "test_urls": [
+      "https://www.google.com",
+      "https://www.bing.com",
+      "https://www.example.com",
+      "https://thisurldoesnotexistforsure12345.com",
+      "https://www.google.com/notarealpage12345"
+    ],
+    "duration_seconds": 0.16,
+    "valid_count": 3,
+    "broken_count": 2,
+    "success": true,
+    "accuracy": 100.0
+  },
+  "cache_manager": {
+    "issues": [],
+    "recommendations": [],
+    "set_duration_seconds": 0.000216,
+    "get_duration_seconds": 0.000114,
+    "cache_hit": true,
+    "expiry_works": true,
+    "clear_works": true,
+    "stats": {
+      "total_entries": 0,
+      "expired_entries": 0,
+      "active_entries": 0,
+      "cache_size_bytes": 0,
+      "cache_size_kb": 0.0
+    },
+    "success": true
+  },
+  "summary": {
+    "components_tested": 5,
+    "total_issues": 8,
+    "component_status": {
+      "config": "success",
+      "scraper": "success",
+      "ranking": "success",
+      "link_checker": "success",
+      "cache_manager": "success"
+    },
+    "issues_by_component": {
+      "config": 1,
+      "scraper": 7,
+      "ranking": 0,
+      "link_checker": 0,
+      "cache_manager": 0
+    },
+    "recommendations": [
+      "Add Google API key and Search Engine ID to settings.json"
+    ]
+  }
+}
