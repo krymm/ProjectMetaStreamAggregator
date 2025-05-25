@@ -188,7 +188,7 @@ class SearchCache:
                         if current_time - cache_time > self.expiry_seconds:
                             stats['expired_entries'] += 1
                         else:
-                            stats['active_entries'] +=.1
+                            stats['active_entries'] += 1
                     except:
                         # Count as expired if can't read
                         stats['expired_entries'] += 1
