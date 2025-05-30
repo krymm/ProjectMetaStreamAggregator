@@ -67,6 +67,73 @@ function loadScript(src) {
     });
 }
 
+async function loadAndDisplaySitesOnMainPanel() {
+    const siteListContainer = document.getElementById('site-list-container');
+    if (!siteListContainer) {
+        console.error('Main site list container (#site-list-container) not found.');
+        return;
+    }
+    siteListContainer.innerHTML = '<p>Loading sites...</p>'; // Loading message
+
+    try {
+        // Fetch sites and settings concurrently
+        const [sitesResponse, settingsResponse] = await Promise.all([
+            fetch('/api/sites'), // Using global fetch
+            fetch('/api/settings') // Using global fetch
+        ]);
+
+        if (!sitesResponse.ok) throw new Error(`Failed to fetch sites: ${sitesResponse.status} ${sitesResponse.statusText}`);
+        if (!settingsResponse.ok) throw new Error(`Failed to fetch settings: ${settingsResponse.status} ${settingsResponse.statusText}`);
+
+        const sitesConfig = await sitesResponse.json();
+        const settings = await settingsResponse.json();
+
+        const defaultSites = settings.default_search_sites || [];
+        siteListContainer.innerHTML = ''; // Clear loading message
+
+        const availableSites = Object.values(sitesConfig);
+
+        if (availableSites.length === 0) {
+            siteListContainer.innerHTML = '<p>No sites configured. Please add sites in Settings.</p>';
+            return;
+        }
+
+        availableSites.forEach(site => {
+            if (!site || !site.name) {
+                console.warn("Skipping site with invalid data:", site);
+                return;
+            }
+
+            const siteDiv = document.createElement('div');
+            siteDiv.className = 'site-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'site-checkbox';
+            checkbox.id = `main-site-cb-${site.name.replace(/\s+/g, '-').toLowerCase()}`;
+            checkbox.value = site.name;
+            checkbox.name = 'search_sites_on_main_panel';
+
+            if (defaultSites.includes(site.name)) {
+                checkbox.checked = true;
+            }
+
+            const label = document.createElement('label');
+            label.htmlFor = checkbox.id;
+            label.textContent = site.name;
+
+            siteDiv.appendChild(checkbox);
+            siteDiv.appendChild(label);
+            siteListContainer.appendChild(siteDiv);
+        });
+        console.info("Sites loaded and displayed on main panel.");
+
+    } catch (error) {
+        console.error('Error loading or displaying sites on main panel:', error);
+        siteListContainer.innerHTML = `<p class="error-message">Error loading sites: ${error.message}</p>`;
+    }
+}
+
 /**
  * Initialize the application
  */
@@ -145,6 +212,9 @@ function initializeUI() {
  */
 function restoreApplicationState() {
     // Already handled by each component's initialization
+
+    // Load sites onto the main panel
+    loadAndDisplaySitesOnMainPanel(); // New call
 }
 
 /**

@@ -94,7 +94,7 @@ if not exist settings.json (
 )
 
 REM Create cache directory if it doesn't exist
-if not exist search_cache mkdir search_cache
+if not exist cache mkdir cache
 
 echo.
 echo ---------------------------------------------------

@@ -232,7 +232,7 @@ def save_sites_config(sites_data):
 
     Args:
         sites_data (dict): A dictionary containing all site configurations.
-    
+
     Returns:
         bool: True if saving was successful, False otherwise.
     """
@@ -241,7 +241,7 @@ def save_sites_config(sites_data):
         if not isinstance(sites_data, dict):
             logger.error("Invalid sites_data format: must be a dictionary.")
             return False
-            
+
         # Further validation could be added here to check structure of each site_config in sites_data
         # For example, ensuring each site has 'name', 'base_url', etc.
         # This would be similar to the validation in load_sites_config.

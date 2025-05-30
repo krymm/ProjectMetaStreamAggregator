@@ -349,7 +349,7 @@ def fetch_extended_details(item_url, site_config_for_item_page, source_site_name
     if not any([duration_selector, rating_selector, views_selector, author_selector]):
         logger.debug(f"No relevant selectors found in site_config for {site_config_for_item_page.get('name', 'unknown config')} when fetching details for {item_url}")
         return details
-    
+
     logger.info(f"Fetching extended details for: {item_url} (source: {source_site_name}, using config: {site_config_for_item_page.get('name')})")
 
     try:
@@ -366,7 +366,7 @@ def fetch_extended_details(item_url, site_config_for_item_page, source_site_name
             if duration_str:
                 details['duration_str'] = duration_str
                 details['duration_sec'] = parse_duration(duration_str)
-        
+
         if rating_selector:
             rating_str = get_attribute_or_text(soup, rating_selector)
             if rating_str:
@@ -383,7 +383,7 @@ def fetch_extended_details(item_url, site_config_for_item_page, source_site_name
             author = get_attribute_or_text(soup, author_selector)
             if author:
                 details['author'] = author
-        
+
         logger.debug(f"Fetched details for {item_url}: {details}")
 
     except requests.exceptions.Timeout:
@@ -414,7 +414,7 @@ def execute_google_search(site_name, base_url, query, api_key, cse_id):
         # This 'base_url' is the URL of the site we want to search *on* using Google.
         search_term = f"site:{base_url} {query}"
         logger.info(f"Google Searching on '{base_url}' for query '{query}' (Original site context: '{site_name}')")
-        
+
         res = service.cse().list(q=search_term, cx=cse_id, num=10).execute() # Max 10 per query
         raw_items = res.get('items', [])
 
@@ -440,7 +440,7 @@ def execute_google_search(site_name, base_url, query, api_key, cse_id):
                         site_config_for_item_page = s_config
                         logger.debug(f"Found matching config '{s_config.get('name')}' for URL '{link}' based on domain '{item_domain}'")
                         break
-                
+
                 extended_details = {}
                 if site_config_for_item_page:
                     # Fetch extended details ONLY if the result URL is from a known site with selectors
@@ -516,7 +516,7 @@ def execute_bing_search(site_name, base_url, query, api_key):
                 # Some results might have 'deepLinks' or other structures that could hint at images,
                 # but it's not as direct as Google's pagemap.
                 thumbnail = item.get('thumbnailUrl') # Check if BCP API ever returns this (unlikely for generic web search)
-                                
+
                 if title and link:
                     item_domain = urlparse(link).netloc
                     site_config_for_item_page = None
@@ -526,7 +526,7 @@ def execute_bing_search(site_name, base_url, query, api_key):
                             site_config_for_item_page = s_config
                             logger.debug(f"Found matching config '{s_config.get('name')}' for URL '{link}' (Bing result)")
                             break
-                    
+
                     extended_details = {}
                     if site_config_for_item_page:
                         if link.startswith(site_config_for_item_page.get('base_url', '')):
@@ -582,7 +582,7 @@ def execute_duckduckgo_search(site_name, base_url, query, api_key=None):
         request_headers.update({
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
-            'Referer': 'https://duckduckgo.com/' 
+            'Referer': 'https://duckduckgo.com/'
         })
         
         logger.info(f"DuckDuckGo Searching on '{base_url}' for query '{query}' (Original site context: '{site_name}')")
@@ -605,7 +605,7 @@ def execute_duckduckgo_search(site_name, base_url, query, api_key=None):
 
         for element in result_elements:
             try:
-                title_element = element.select_one('.result__title a, .web-result-title a') 
+                title_element = element.select_one('.result__title a, .web-result-title a')
                 link_element = title_element # Link is usually the same element
                 snippet_element = element.select_one('.result__snippet, .web-result-snippet')
 
@@ -748,7 +748,7 @@ def call_site_api(site_config, query):
         # --- 5. Map API response fields to your common result format ---
         # This is a best-effort generic mapping. Users MUST customize this per API.
         # Common patterns: items in a list, often under a key like 'items', 'results', 'data'
-        
+
         # Try to find a list of items in the response
         possible_item_keys = ['items', 'results', 'data', 'videos', 'entries', 'hits']
         item_list = None
@@ -765,7 +765,7 @@ def call_site_api(site_config, query):
                         item_list = value
                         logger.warning(f"Found item list under an unexpected key for '{site_name}'. Please verify mapping.")
                         break
-        
+
         if not item_list:
             logger.warning(f"Could not find a list of items in API response from '{site_name}'. Response: {str(api_data)[:200]}")
             return results
@@ -780,16 +780,16 @@ def call_site_api(site_config, query):
             title = item.get(site_config.get('api_title_field', 'title')) or \
                     item.get('name') or \
                     item.get('video_title')
-            
+
             url = item.get(site_config.get('api_url_field', 'url')) or \
                   item.get('link') or \
                   item.get('video_url')
-            
+
             thumbnail = item.get(site_config.get('api_thumbnail_field', 'thumbnail')) or \
                         item.get('thumbnail_url') or \
                         item.get('image') or \
                         item.get('preview_image')
-            
+
             duration_str = str(item.get(site_config.get('api_duration_field', 'duration'), ''))
             rating_str = str(item.get(site_config.get('api_rating_field', 'rating'), ''))
             views_str = str(item.get(site_config.get('api_views_field', 'views'), ''))
@@ -800,7 +800,7 @@ def call_site_api(site_config, query):
             if not title or not url:
                 logger.warning(f"Skipping API item from '{site_name}' due to missing title or URL. Item: {str(item)[:100]}")
                 continue
-            
+
             # Ensure URL is absolute
             if isinstance(url, str) and not url.startswith(('http://', 'https://')):
                 url = urljoin(site_config.get('base_url', ''), url)
@@ -832,5 +832,5 @@ def call_site_api(site_config, query):
 
     if not results:
         logger.info(f"No results processed from API for '{site_name}' with query '{query}'. This may be due to missing site-specific field mappings in config or an empty API response.")
-        
+
     return results

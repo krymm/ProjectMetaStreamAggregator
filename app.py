@@ -80,8 +80,8 @@ def generate_site_key(site_name):
     key = ''.join(c for c in key if c.isalnum() or c == '_')
     # Ensure key is not empty after sanitization
     if not key:
-        key = "unnamed_site" 
-    
+        key = "unnamed_site"
+
     # Ensure uniqueness if this key already exists
     original_key = key
     counter = 1
@@ -105,7 +105,7 @@ def validate_site_config_data(site_data, is_new_site=True):
         errors.append("'name' must be a string.")
     if 'base_url' in site_data and not isinstance(site_data['base_url'], str): # Basic URL format check could be added
         errors.append("'base_url' must be a string.")
-    
+
     search_method = site_data.get('search_method')
     if search_method:
         if not isinstance(search_method, str):
@@ -120,7 +120,7 @@ def validate_site_config_data(site_data, is_new_site=True):
     if is_new_site and 'name' in site_data:
         if any(existing_site['name'] == site_data['name'] for existing_site in SITES_CONFIG.values()):
             errors.append(f"Site name '{site_data['name']}' already exists.")
-            
+
     # Example of type check for optional fields
     if 'popularity_multiplier' in site_data and site_data['popularity_multiplier'] is not None:
         if not isinstance(site_data['popularity_multiplier'], (int, float)):
@@ -139,7 +139,7 @@ def validate_site_config_data(site_data, is_new_site=True):
                     errors.append(f"Scoring weight '{weight_key}' must be a number.")
                 elif not (0 <= weight_val <= 1): # Weights usually are 0-1
                     errors.append(f"Scoring weight '{weight_key}' must be between 0 and 1.")
-    
+
     return errors
 
 @app.route('/api/sites', methods=['POST'])
@@ -157,15 +157,15 @@ def create_site():
 
         site_name = new_site_data['name']
         site_key = generate_site_key(site_name)
-        
+
         # Ensure the final generated key is truly unique (should be handled by generate_site_key, but double check)
         if site_key in SITES_CONFIG:
              # This case should ideally not be hit if generate_site_key works perfectly
-            return jsonify({"error": f"Site key '{site_key}' conflict. Try a different name."}), 409 
+            return jsonify({"error": f"Site key '{site_key}' conflict. Try a different name."}), 409
 
         # Add the new site to the in-memory configuration
         SITES_CONFIG[site_key] = new_site_data
-        
+
         # Save the entire updated SITES_CONFIG to sites.json
         if config_manager.save_sites_config(SITES_CONFIG):
             logger.info(f"Site '{site_name}' created with key '{site_key}'.")
@@ -202,21 +202,21 @@ def update_site(site_key):
 
         # Perform standard validation on the fields provided
         validation_errors = validate_site_config_data(updated_site_data, is_new_site=False) # Standard checks
-        
+
         # Additional check for name uniqueness if name is being changed
         if new_name and new_name != original_name:
             for key, config in SITES_CONFIG.items():
                 if key != site_key and config.get('name') == new_name:
                     validation_errors.append(f"Site name '{new_name}' already exists for another site.")
                     break
-        
+
         if validation_errors:
             return jsonify({"error": "Validation failed.", "messages": validation_errors}), 400
-        
+
         # Preserve the original site key, even if the name inside the config changes.
         # Update the in-memory configuration
         SITES_CONFIG[site_key].update(updated_site_data) # Merge update
-        # Or full replace: SITES_CONFIG[site_key] = updated_site_data 
+        # Or full replace: SITES_CONFIG[site_key] = updated_site_data
         # Full replace is often cleaner if all fields are expected in the PUT payload.
         # Let's assume full replacement for now, but ensure 'name' is part of payload.
         if 'name' not in updated_site_data : # If name is critical and not in payload
@@ -250,10 +250,10 @@ def delete_site(site_key):
             return jsonify({"error": "Site not found."}), 404
 
         deleted_site_name = SITES_CONFIG[site_key].get('name', site_key) # For logging
-        
+
         # Remove the site from the in-memory configuration
         SITES_CONFIG.pop(site_key)
-        
+
         if config_manager.save_sites_config(SITES_CONFIG):
             logger.info(f"Site '{deleted_site_name}' (key: {site_key}) deleted successfully.")
             # 204 No Content is often used for successful DELETE with no body
@@ -659,18 +659,18 @@ def ollama_test_connection():
             ollama_api_url_base = ollama_api_url_base[:-len('/api/generate')]
         elif ollama_api_url_base.endswith('/api/tags'):
             ollama_api_url_base = ollama_api_url_base[:-len('/api/tags')]
-        
+
         # Remove trailing slash if any, before appending /api/tags
         if ollama_api_url_base.endswith('/'):
             ollama_api_url_base = ollama_api_url_base[:-1]
-            
+
         test_url = f"{ollama_api_url_base}/api/tags"
         logger.info(f"Testing Ollama connection to: {test_url}")
 
         try:
             # Use a timeout for the request (e.g., 10 seconds)
             response = requests.get(test_url, timeout=10)
-            
+
             # Check if the request was successful (status code 200)
             # Ollama's /api/tags should return 200 even if no models are present (empty list)
             if response.status_code == 200:
@@ -720,10 +720,10 @@ def ollama_get_models():
             ollama_api_url_base = ollama_api_url_base[:-len('/api/generate')]
         elif ollama_api_url_base.endswith('/api/tags'):
             ollama_api_url_base = ollama_api_url_base[:-len('/api/tags')]
-        
+
         if ollama_api_url_base.endswith('/'):
             ollama_api_url_base = ollama_api_url_base[:-1]
-            
+
         tags_url = f"{ollama_api_url_base}/api/tags"
         logger.info(f"Fetching Ollama models from: {tags_url}")
 
@@ -746,7 +746,7 @@ def ollama_get_models():
             else:
                 logger.warning(f"Failed to fetch models from {tags_url}. Status: {response.status_code}, Response: {response.text[:200]}")
                 return jsonify({
-                    "success": False, 
+                    "success": False,
                     "message": f"Ollama API request failed. Status: {response.status_code}. Details: {response.text[:100]}",
                     "models": []
                 })
@@ -786,7 +786,7 @@ def backup_configuration():
         }
 
         response_json = json.dumps(backup_data, indent=2)
-        
+
         # Create a filename with a timestamp
         timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"metastream_backup_{timestamp_str}.json"
@@ -805,7 +805,7 @@ def backup_configuration():
 def restore_configuration():
     """Restores settings and sites configuration from an uploaded JSON backup file."""
     global USER_SETTINGS, SITES_CONFIG # To update in-memory configs after restore
-    
+
     if 'backup_file' not in request.files:
         return jsonify({"success": False, "message": "No backup file provided."}), 400
 
@@ -823,10 +823,10 @@ def restore_configuration():
             # Validate structure
             if not isinstance(restored_data, dict):
                 raise ValueError("Backup data is not a valid JSON object.")
-            
+
             if "settings" not in restored_data or not isinstance(restored_data["settings"], dict):
                 raise ValueError("Backup data is missing 'settings' or it's not a valid object.")
-            
+
             if "sites" not in restored_data or not isinstance(restored_data["sites"], dict):
                 raise ValueError("Backup data is missing 'sites' or it's not a valid object.")
 
@@ -840,8 +840,49 @@ def restore_configuration():
 
             # At this point, you might want to perform more detailed validation on the content
             # of restored_settings and restored_sites to ensure they are well-formed.
-            # For example, using parts of validate_site_config_data for each site in restored_sites.
-            # For simplicity, this example proceeds directly to saving if basic structure is okay.
+
+            # --- Enhanced Settings Validation ---
+            rs = restored_settings # shorthand
+            if not isinstance(rs.get('cache_expiry_minutes'), (int, float)) and rs.get('cache_expiry_minutes') is not None: # Allow None
+                raise ValueError("'settings.cache_expiry_minutes' must be a number or null.")
+            if not isinstance(rs.get('results_per_page_default'), int) and rs.get('results_per_page_default') is not None: # Allow None
+                raise ValueError("'settings.results_per_page_default' must be an integer or null.")
+            if 'scoring_weights' in rs and rs['scoring_weights'] is not None and not isinstance(rs['scoring_weights'], dict): # Allow None
+                raise ValueError("'settings.scoring_weights' must be an object or null.")
+            if 'default_search_sites' in rs and rs['default_search_sites'] is not None and not isinstance(rs['default_search_sites'], list): # Allow None
+                raise ValueError("'settings.default_search_sites' must be an array or null.")
+            # Ensure all default settings keys are present, fill with default if missing (optional, but good for robustness)
+            for key, default_value in config_manager.DEFAULT_SETTINGS.items():
+                if key not in rs:
+                    rs[key] = default_value
+                # Deeper check for scoring_weights structure if it exists
+                if key == 'scoring_weights' and rs[key] is not None: # if scoring_weights exists and is a dict
+                    for sw_key, sw_default_value in config_manager.DEFAULT_SETTINGS['scoring_weights'].items():
+                        if sw_key not in rs[key]:
+                             rs[key][sw_key] = sw_default_value
+
+            # --- Enhanced Sites Validation ---
+            all_site_validation_errors = []
+            for site_key, site_config_to_validate in restored_sites.items():
+                if not isinstance(site_config_to_validate, dict):
+                    all_site_validation_errors.append(f"Site data for '{site_key}' is not a valid object.")
+                    continue
+
+                # Ensure 'name' field exists for validation, even if it's just the key temporarily
+                if 'name' not in site_config_to_validate:
+                     site_config_to_validate['name'] = site_key
+
+                # is_new_site=False because we are checking structure, not name uniqueness against current live config
+                errors = validate_site_config_data(site_config_to_validate, is_new_site=False)
+                if errors:
+                    all_site_validation_errors.extend([f"Site '{site_key}': {e}" for e in errors])
+
+            if all_site_validation_errors:
+                # Join errors with a newline for better readability if displayed in a textarea or preformatted element
+                error_message_detail = "; ".join(all_site_validation_errors)
+                if len(error_message_detail) > 1000: # Truncate if too long for a typical error message
+                    error_message_detail = error_message_detail[:1000] + "..."
+                raise ValueError(f"Invalid site configurations in backup: {error_message_detail}")
 
             # Save restored configurations
             settings_saved = config_manager.save_settings(restored_settings)
@@ -852,14 +893,14 @@ def restore_configuration():
                 # A more robust solution might try to roll back or restore from a temporary pre-restore backup.
                 logger.error("Critical error: Failed to save one or both configuration files during restore.")
                 # Attempt to reload original configs to minimize inconsistent state in memory
-                USER_SETTINGS = config_manager.load_settings() 
+                USER_SETTINGS = config_manager.load_settings()
                 SITES_CONFIG = config_manager.load_sites_config()
                 return jsonify({"success": False, "message": "Failed to save restored configurations. System state might be inconsistent."}), 500
-            
+
             # Reload configurations into memory
             USER_SETTINGS = config_manager.load_settings()
             SITES_CONFIG = config_manager.load_sites_config()
-            
+
             # Update cache expiry if it was changed in restored settings
             if 'cache_expiry_minutes' in USER_SETTINGS:
                  SEARCH_CACHE.expiry_seconds = USER_SETTINGS['cache_expiry_minutes'] * 60
