@@ -5,7 +5,10 @@ import time
 import random
 import re
 import logging
-from urllib.parse import urljoin, quote_plus
+from urllib.parse import urljoin, quote_plus, urlparse
+
+# Import for fetching site configurations
+from config_manager import load_sites_config
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -312,60 +315,168 @@ def scrape_search_page(site_config, query, page=1, max_pages_per_site=1):
 
     return results
 
+
+def fetch_extended_details(item_url, site_config_for_item_page, source_site_name):
+    """
+    Fetches extended details (duration, rating, views, author) from a specific item URL.
+
+    Args:
+        item_url (str): The URL of the page to scrape.
+        site_config_for_item_page (dict): The site configuration containing selectors for the item_url's domain.
+        source_site_name (str): The name of the site that originally provided this URL (e.g., Google, Bing).
+
+    Returns:
+        dict: A dictionary with 'duration_sec', 'site_rating', 'views', 'author'.
+              Values are None if not found or if an error occurs.
+    """
+    details = {
+        'duration_str': None, 'duration_sec': None,
+        'rating_str': None, 'site_rating': None,
+        'views_str': None, 'views': None,
+        'author': None
+    }
+
+    if not site_config_for_item_page:
+        logger.debug(f"No site_config provided for {item_url}, cannot fetch extended details.")
+        return details
+
+    # Ensure selectors exist in the provided config
+    duration_selector = site_config_for_item_page.get('duration_selector')
+    rating_selector = site_config_for_item_page.get('rating_selector')
+    views_selector = site_config_for_item_page.get('views_selector')
+    author_selector = site_config_for_item_page.get('author_selector')
+
+    if not any([duration_selector, rating_selector, views_selector, author_selector]):
+        logger.debug(f"No relevant selectors found in site_config for {site_config_for_item_page.get('name', 'unknown config')} when fetching details for {item_url}")
+        return details
+
+    logger.info(f"Fetching extended details for: {item_url} (source: {source_site_name}, using config: {site_config_for_item_page.get('name')})")
+
+    try:
+        time.sleep(random.uniform(0.5, 1.5)) # Basic politeness delay
+        response = requests.get(item_url, headers=HEADERS, timeout=15) # Shorter timeout for individual pages
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # No need to select a container, selectors should be for the whole page
+        # or relative to a known structure if site_config is specific enough.
+
+        if duration_selector:
+            duration_str = get_attribute_or_text(soup, duration_selector)
+            if duration_str:
+                details['duration_str'] = duration_str
+                details['duration_sec'] = parse_duration(duration_str)
+
+        if rating_selector:
+            rating_str = get_attribute_or_text(soup, rating_selector)
+            if rating_str:
+                details['rating_str'] = rating_str
+                details['site_rating'] = parse_rating(rating_str)
+
+        if views_selector:
+            views_str = get_attribute_or_text(soup, views_selector)
+            if views_str:
+                details['views_str'] = views_str
+                details['views'] = parse_views(views_str)
+
+        if author_selector:
+            author = get_attribute_or_text(soup, author_selector)
+            if author:
+                details['author'] = author
+
+        logger.debug(f"Fetched details for {item_url}: {details}")
+
+    except requests.exceptions.Timeout:
+        logger.warning(f"Timeout fetching extended details from {item_url} (source: {source_site_name})")
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"Request error fetching extended details from {item_url} (source: {source_site_name}): {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error fetching extended details from {item_url} (source: {source_site_name}): {e}")
+        # Optionally, re-raise if debugging is needed for unexpected parsing errors
+        # raise
+
+    return details
+
+
 def execute_google_search(site_name, base_url, query, api_key, cse_id):
     """ Executes a Google Custom Search for a specific site."""
     results = []
     if not GOOGLE_API_AVAILABLE or not api_key or not cse_id:
-        logger.error("Error: Google API dependencies or credentials missing.")
+        logger.error("Error: Google API dependencies or credentials missing for Google Search.")
         return results
 
+    # Load all site configurations to find matching selectors for result URLs
+    all_site_configs = load_sites_config()
+
     try:
-        # Build a service object for interacting with the API. Visit
-        # the Google APIs Console to create a project and API key.
-        # https://cloud.google.com/docs/authentication/api-keys
-        # https://developers.google.com/custom-search/v1/overview
         service = build("customsearch", "v1", developerKey=api_key)
+        # Using the passed 'base_url' to restrict search, along with the query
+        # This 'base_url' is the URL of the site we want to search *on* using Google.
+        search_term = f"site:{base_url} {query}"
+        logger.info(f"Google Searching on '{base_url}' for query '{query}' (Original site context: '{site_name}')")
 
-        # Example: fetch first 10 results which is the limit per query for free tier
-        search_term = f"site:{base_url} {query}" # Construct site-specific query
-        logger.info(f"Google Searching: '{search_term}'")
-        res = service.cse().list(
-            q=search_term,
-            cx=cse_id,
-            num=10 # Max 10 per query
-        ).execute()
+        res = service.cse().list(q=search_term, cx=cse_id, num=10).execute() # Max 10 per query
+        raw_items = res.get('items', [])
 
-        items = res.get('items', [])
-        for item in items:
+        for item in raw_items:
             title = item.get('title')
             link = item.get('link')
-            snippet = item.get('snippet') # Can use snippet for relevance boosting
-            # Attempt to get thumbnail from pagemap if available
+            snippet = item.get('snippet')
             thumbnail = None
             pagemap = item.get('pagemap', {})
             if 'cse_thumbnail' in pagemap:
                 thumbnail = pagemap['cse_thumbnail'][0].get('src')
             elif 'cse_image' in pagemap:
-                 thumbnail = pagemap['cse_image'][0].get('src')
+                thumbnail = pagemap['cse_image'][0].get('src')
 
             if title and link:
-                 results.append({
+                # Determine if this link belongs to a configured site to fetch extended details
+                item_domain = urlparse(link).netloc
+                site_config_for_item_page = None
+                for config_name, s_config in all_site_configs.items():
+                    # Ensure s_config['base_url'] has a domain part for comparison
+                    config_base_url_parsed = urlparse(s_config.get('base_url', ''))
+                    if config_base_url_parsed.netloc and config_base_url_parsed.netloc in item_domain:
+                        site_config_for_item_page = s_config
+                        logger.debug(f"Found matching config '{s_config.get('name')}' for URL '{link}' based on domain '{item_domain}'")
+                        break
+
+                extended_details = {}
+                if site_config_for_item_page:
+                    # Fetch extended details ONLY if the result URL is from a known site with selectors
+                    if link.startswith(site_config_for_item_page.get('base_url', '')):
+                        extended_details = fetch_extended_details(link, site_config_for_item_page, "Google CSE")
+                    else:
+                        logger.debug(f"URL '{link}' domain matches '{site_config_for_item_page.get('name')}' but base_url does not. Skipping extended details.")
+                else:
+                    # This occurs if the search result (link) is not for a site defined in our sites.json
+                    # or if the site it belongs to doesn't have detailed selectors.
+                    logger.debug(f"No specific site_config found for URL '{link}' (domain: {item_domain}). Cannot fetch extended details.")
+
+                results.append({
                     'title': title,
                     'url': link,
-                    'thumbnail': thumbnail  or '',  # May be null
-                    'description_snippet': snippet, # Store for potential later use (relevance)
-                     # Fill other fields with defaults or leave blank
-                    'duration_str': None, 'duration_sec': None,
-                    'rating_str': None, 'site_rating': None,
-                    'views_str': None, 'views': None,
-                    'author': None,
-                    'site': site_name, # Associate result with original target site
+                    'thumbnail': thumbnail or '',
+                    'description_snippet': snippet,
+                    'duration_str': extended_details.get('duration_str'),
+                    'duration_sec': extended_details.get('duration_sec'),
+                    'rating_str': extended_details.get('rating_str'),
+                    'site_rating': extended_details.get('site_rating'),
+                    'views_str': extended_details.get('views_str'),
+                    'views': extended_details.get('views'),
+                    'author': extended_details.get('author'),
+                    # 'site' should be the name of the site where the content was found,
+                    # which might be different from 'site_name' if Google returns a result from another site.
+                    # For now, we use the matched site_config's name or fall back to site_name.
+                    'site': site_config_for_item_page.get('name') if site_config_for_item_page else site_name,
                     'source_method': 'google_cse'
                 })
+            else:
+                logger.warning(f"Skipping Google CSE item - missing title or link. Item: {str(item)[:100]}")
+
 
     except Exception as e:
-        logger.error(f"Error executing Google Search for site '{site_name}': {e}")
-        # Common errors: Invalid API key, CSE ID, quota limit exceeded
+        logger.error(f"Error executing Google Search for site '{site_name}' (targeting base_url '{base_url}'): {e}")
 
     return results
 
@@ -373,175 +484,353 @@ def execute_bing_search(site_name, base_url, query, api_key):
     """ Executes a Bing Search API for a specific site."""
     results = []
     if not api_key:
-        logger.error("Error: Bing API key is missing.")
+        logger.error("Error: Bing API key is missing for Bing Search.")
         return results
 
-    try:
-        # Bing Search API endpoint
-        search_url = "https://api.bing.microsoft.com/v7.0/search"
+    all_site_configs = load_sites_config()
 
-        # Construct site-specific query
-        search_term = f"site:{base_url} {query}"
+    try:
+        search_url = "https://api.bing.microsoft.com/v7.0/search"
+        search_term = f"site:{base_url} {query}" # Target search within the specified base_url
         
-        # Set headers
-        headers = {
+        request_headers = {
             "Ocp-Apim-Subscription-Key": api_key,
             "User-Agent": HEADERS["User-Agent"]
         }
-        
-        # Set parameters
-        params = {
-            "q": search_term,
-            "count": 50,  # Request 50 results (may get fewer)
-            "responseFilter": "Webpages"
-        }
+        params = {"q": search_term, "count": 50, "responseFilter": "Webpages"}
 
-        logger.info(f"Bing Searching: '{search_term}'")
-        response = requests.get(search_url, headers=headers, params=params, timeout=20)
+        logger.info(f"Bing Searching on '{base_url}' for query '{query}' (Original site context: '{site_name}')")
+        response = requests.get(search_url, headers=request_headers, params=params, timeout=20)
         response.raise_for_status()
         
         search_data = response.json()
         
         if 'webPages' in search_data and 'value' in search_data['webPages']:
-            items = search_data['webPages']['value']
+            raw_items = search_data['webPages']['value']
             
-            for item in items:
+            for item in raw_items:
                 title = item.get('name')
                 link = item.get('url')
                 snippet = item.get('snippet')
-                
-                # Bing does not provide thumbnails directly, would need to fetch from the page itself
-                thumbnail = ''
-                
+                # Bing API does not provide thumbnails directly in the main response.
+                # Some results might have 'deepLinks' or other structures that could hint at images,
+                # but it's not as direct as Google's pagemap.
+                thumbnail = item.get('thumbnailUrl') # Check if BCP API ever returns this (unlikely for generic web search)
+
                 if title and link:
+                    item_domain = urlparse(link).netloc
+                    site_config_for_item_page = None
+                    for config_name, s_config in all_site_configs.items():
+                        config_base_url_parsed = urlparse(s_config.get('base_url', ''))
+                        if config_base_url_parsed.netloc and config_base_url_parsed.netloc in item_domain:
+                            site_config_for_item_page = s_config
+                            logger.debug(f"Found matching config '{s_config.get('name')}' for URL '{link}' (Bing result)")
+                            break
+
+                    extended_details = {}
+                    if site_config_for_item_page:
+                        if link.startswith(site_config_for_item_page.get('base_url', '')):
+                             extended_details = fetch_extended_details(link, site_config_for_item_page, "Bing Search")
+                        else:
+                            logger.debug(f"URL '{link}' domain matches '{site_config_for_item_page.get('name')}' but base_url does not. Skipping extended details.")
+                    else:
+                        logger.debug(f"No specific site_config found for Bing result URL '{link}'. Cannot fetch extended details.")
+
                     results.append({
                         'title': title,
                         'url': link,
-                        'thumbnail': thumbnail,
+                        'thumbnail': thumbnail or '', # Use if available, else empty
                         'description_snippet': snippet,
-                        'duration_str': None, 'duration_sec': None,
-                        'rating_str': None, 'site_rating': None,
-                        'views_str': None, 'views': None,
-                        'author': None,
-                        'site': site_name,
+                        'duration_str': extended_details.get('duration_str'),
+                        'duration_sec': extended_details.get('duration_sec'),
+                        'rating_str': extended_details.get('rating_str'),
+                        'site_rating': extended_details.get('site_rating'),
+                        'views_str': extended_details.get('views_str'),
+                        'views': extended_details.get('views'),
+                        'author': extended_details.get('author'),
+                        'site': site_config_for_item_page.get('name') if site_config_for_item_page else site_name,
                         'source_method': 'bing_search'
                     })
+                else:
+                    logger.warning(f"Skipping Bing Search item - missing title or link. Item: {str(item)[:100]}")
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error connecting to Bing Search API: {e}")
+        logger.error(f"Error connecting to Bing Search API for site '{site_name}': {e}")
     except Exception as e:
-        logger.error(f"Error executing Bing Search for site '{site_name}': {e}")
+        logger.error(f"Error executing Bing Search for site '{site_name}' (targeting base_url '{base_url}'): {e}")
 
     return results
 
 def execute_duckduckgo_search(site_name, base_url, query, api_key=None):
     """ 
     Executes a DuckDuckGo search for a specific site.
-    Note: DuckDuckGo doesn't offer an official API, so this uses their search page.
-    The api_key parameter is included for consistency but not used.
+    Note: DuckDuckGo doesn't offer an official API, so this uses their HTML search page.
+    The api_key parameter is for consistency but not used by DDG.
     """
     results = []
+    all_site_configs = load_sites_config()
     
     try:
-        # DuckDuckGo search URL
-        search_url = "https://duckduckgo.com/html/"
+        search_ddg_url = "https://html.duckduckgo.com/html/" # Use the HTML version
+        # search_ddg_url = "https://duckduckgo.com/" # Standard version, might be more fragile
         
-        # Construct site-specific query
         search_term = f"site:{base_url} {query}"
         
-        # Set parameters for the search
-        params = {
-            "q": search_term,
-            "kl": "us-en"  # Region/language setting
-        }
+        request_params = {"q": search_term, "kl": "us-en"} # Region/language
+        request_headers = HEADERS.copy()
+        # DDG can be sensitive to headers, mimic a common browser
+        request_headers.update({
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Referer': 'https://duckduckgo.com/'
+        })
         
-        # Add random parameters to help avoid blocking
-        headers = HEADERS.copy()
-        headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
-        headers['Accept-Language'] = 'en-US,en;q=0.5'
+        logger.info(f"DuckDuckGo Searching on '{base_url}' for query '{query}' (Original site context: '{site_name}')")
+        time.sleep(random.uniform(1.0, 3.0)) # DDG can be quick to block scrapers
         
-        logger.info(f"DuckDuckGo Searching: '{search_term}'")
-        
-        # Add a delay to avoid rate limiting
-        time.sleep(random.uniform(1.0, 3.0))
-        
-        # Send the request
-        response = requests.post(search_url, headers=headers, data=params, timeout=20)
+        # DDG uses POST for html endpoint sometimes, or GET for main
+        # Using GET for html endpoint as it's simpler and often works.
+        # response = requests.post(search_ddg_url, headers=request_headers, data=request_params, timeout=20)
+        response = requests.get(search_ddg_url, headers=request_headers, params=request_params, timeout=20)
         response.raise_for_status()
         
-        # Parse the HTML response
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Extract search results
-        result_elements = soup.select('.result')
-        
+        # DDG selectors can change, these are common for the HTML version
+        # result_elements = soup.select('div.results > div.result') # More specific path
+        result_elements = soup.select('div.web-result') # Common as of late 2023/early 2024 for html version
+
+        if not result_elements: # Fallback for older structure or changes
+            result_elements = soup.select('.result')
+
         for element in result_elements:
             try:
-                # Extract title and link
-                title_element = element.select_one('.result__title a')
-                if not title_element:
+                title_element = element.select_one('.result__title a, .web-result-title a')
+                link_element = title_element # Link is usually the same element
+                snippet_element = element.select_one('.result__snippet, .web-result-snippet')
+
+                if not title_element or not link_element:
+                    logger.debug("DDG item skipped: missing title or link element.")
                     continue
                     
                 title = title_element.get_text(strip=True)
-                link = title_element.get('href')
+                raw_link = link_element.get('href')
                 
-                # Extract snippet
-                snippet_element = element.select_one('.result__snippet')
+                if not raw_link:
+                    logger.debug(f"DDG item '{title}' skipped: missing href in link element.")
+                    continue
+
+                # Handle DDG's redirect links (if any, html version tends to have direct links)
+                link = raw_link
+                if 'duckduckgo.com/l/' in raw_link:
+                    parsed_ddg_url = urlparse(raw_link)
+                    query_params = urllib.parse.parse_qs(parsed_ddg_url.query)
+                    if 'uddg' in query_params and query_params['uddg'][0]:
+                        link = query_params['uddg'][0]
+                    else:
+                        logger.warning(f"Could not extract final URL from DDG redirect: {raw_link}")
+                        # continue # Or try to use the raw_link if it seems plausible
+
                 snippet = snippet_element.get_text(strip=True) if snippet_element else ''
-                
-                # DuckDuckGo search results don't include thumbnails
-                thumbnail = ''
+                thumbnail = '' # DDG HTML search doesn't provide thumbnails
+
+                # Filter: Ensure the link is actually from the target site (base_url)
+                # This is crucial because DDG's "site:" operator can sometimes be leaky.
+                parsed_link_domain = urlparse(link).netloc
+                parsed_base_url_domain = urlparse(base_url).netloc
+                if not parsed_link_domain or parsed_base_url_domain not in parsed_link_domain :
+                    logger.debug(f"DDG result '{title}' ({link}) skipped: domain '{parsed_link_domain}' not within target site '{parsed_base_url_domain}'.")
+                    continue
                 
                 if title and link:
-                    # DuckDuckGo uses redirect links, we need to extract the actual URL
-                    if link.startswith('/'):
-                        continue  # Skip internal links
-                        
-                    # Handle redirects in DDG search results
-                    if 'duckduckgo.com/l/' in link:
-                        # Try to extract the real URL from the redirect parameter
-                        import urllib.parse
-                        parsed_url = urllib.parse.urlparse(link)
-                        query_params = urllib.parse.parse_qs(parsed_url.query)
-                        if 'uddg' in query_params:
-                            link = query_params['uddg'][0]
+                    item_domain = urlparse(link).netloc # Re-parse for safety after potential rewrite
+                    site_config_for_item_page = None
+                    for config_name, s_config in all_site_configs.items():
+                        config_base_url_parsed = urlparse(s_config.get('base_url', ''))
+                        if config_base_url_parsed.netloc and config_base_url_parsed.netloc in item_domain:
+                            site_config_for_item_page = s_config
+                            logger.debug(f"Found matching config '{s_config.get('name')}' for URL '{link}' (DDG result)")
+                            break
                     
-                    # Skip if the link is not from the target site
-                    if not link.startswith(base_url) and not f".{base_url.split('//')[1]}" in link:
-                        continue
-                    
+                    extended_details = {}
+                    if site_config_for_item_page:
+                        if link.startswith(site_config_for_item_page.get('base_url', '')):
+                            extended_details = fetch_extended_details(link, site_config_for_item_page, "DuckDuckGo Search")
+                        else:
+                            logger.debug(f"URL '{link}' domain matches '{site_config_for_item_page.get('name')}' but base_url does not. Skipping extended details.")
+                    else:
+                        logger.debug(f"No specific site_config found for DDG result URL '{link}'. Cannot fetch extended details.")
+
                     results.append({
                         'title': title,
                         'url': link,
                         'thumbnail': thumbnail,
                         'description_snippet': snippet,
-                        'duration_str': None, 'duration_sec': None,
-                        'rating_str': None, 'site_rating': None,
-                        'views_str': None, 'views': None,
-                        'author': None,
-                        'site': site_name,
+                        'duration_str': extended_details.get('duration_str'),
+                        'duration_sec': extended_details.get('duration_sec'),
+                        'rating_str': extended_details.get('rating_str'),
+                        'site_rating': extended_details.get('site_rating'),
+                        'views_str': extended_details.get('views_str'),
+                        'views': extended_details.get('views'),
+                        'author': extended_details.get('author'),
+                        'site': site_config_for_item_page.get('name') if site_config_for_item_page else site_name,
                         'source_method': 'duckduckgo_search'
                     })
-            except Exception as e:
-                logger.warning(f"Error processing DuckDuckGo result: {e}")
+                else: # Should be caught by earlier checks
+                    logger.warning(f"Skipping DDG item - missing title or link. Item content: {element.get_text()[:100]}")
+
+            except Exception as e: # Catch errors processing a single DDG result item
+                logger.warning(f"Error processing a DuckDuckGo result item: {e}. Item: {element.get_text()[:100]}")
                 continue
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error connecting to DuckDuckGo: {e}")
-    except Exception as e:
-        logger.error(f"Error executing DuckDuckGo Search for site '{site_name}': {e}")
+        logger.error(f"Error connecting to DuckDuckGo for site '{site_name}': {e}")
+    except Exception as e: # Catch broader errors like parsing the whole page
+        logger.error(f"Error executing DuckDuckGo Search for site '{site_name}' (targeting base_url '{base_url}'): {e}")
 
     return results
 
-# Placeholder for potential site-specific API integrations if they exist
 def call_site_api(site_config, query):
-    """ Placeholder for interacting with a site's specific API (if one exists). """
-    logger.info(f"Notice: API integration for '{site_config.get('name')}' not implemented.")
-    # --- Implementation would vary drastically based on the specific API ---
-    # 1. Check site_config for api_endpoint, api_key (if needed)
-    # 2. Construct request (GET/POST query params, headers, authentication)
-    # 3. Make request using 'requests' library
-    # 4. Parse JSON response (or XML)
-    # 5. Map API response fields to your common result format (title, url, etc.)
-    # 6. Handle API errors (rate limits, auth failures, etc.)
-    return [] # Return empty list if not implemented
+    """
+    Generic handler for sites that use an API for searching.
+    Logs a warning and returns an empty list as specific API implementation is needed.
+    """
+    site_name = site_config.get('name', 'Unknown Site')
+    logger.warning(
+        f"API search for '{site_name}' using generic handler. "
+        f"Site-specific implementation in 'call_site_api' is required for proper results. "
+        f"Attempting a best-effort generic API call."
+    )
+
+    results = []
+
+    # --- 1. Check site_config for essential API details ---
+    api_url_template = site_config.get('api_url_template')
+    api_key = site_config.get('api_key')  # Optional, depending on API
+    api_key_param = site_config.get('api_key_param') # Optional, param name for API key
+
+    if not api_url_template:
+        logger.error(f"API configuration error for '{site_name}': 'api_url_template' is missing.")
+        return results # Return empty list
+
+    # --- 2. Construct request ---
+    # Replace placeholders in the URL template
+    # Common placeholders: {query}, {api_key} (if api_key_param is not used directly in headers)
+    # More complex placeholder replacement might be needed for specific APIs
+    try:
+        search_url = api_url_template.format(query=quote_plus(query), api_key=api_key or '')
+    except KeyError as e:
+        logger.error(f"Missing placeholder {e} in 'api_url_template' for '{site_name}'. Query: {query}")
+        return results
+
+    # Prepare headers - some APIs require the key in headers
+    request_headers = HEADERS.copy()
+    if api_key and api_key_param and api_key_param.lower() != 'url': # if api_key_param is not 'url', assume header
+        request_headers[api_key_param] = api_key
+    elif api_key and not api_key_param: # Default to a common header if param name not specified
+        request_headers['Authorization'] = f"Bearer {api_key}"
+
+
+    # --- 3. Make request using 'requests' library ---
+    logger.info(f"Calling API for '{site_name}': {search_url}")
+    try:
+        time.sleep(random.uniform(0.5, 1.5)) # Politeness delay
+        response = requests.get(search_url, headers=request_headers, timeout=20)
+        response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+
+        # --- 4. Parse JSON response (assuming JSON) ---
+        try:
+            api_data = response.json()
+        except ValueError: # Includes JSONDecodeError
+            logger.error(f"Failed to parse JSON response from '{site_name}' API: {response.text[:200]}")
+            return results # Return empty if parsing fails
+
+        # --- 5. Map API response fields to your common result format ---
+        # This is a best-effort generic mapping. Users MUST customize this per API.
+        # Common patterns: items in a list, often under a key like 'items', 'results', 'data'
+
+        # Try to find a list of items in the response
+        possible_item_keys = ['items', 'results', 'data', 'videos', 'entries', 'hits']
+        item_list = None
+        if isinstance(api_data, list):
+            item_list = api_data
+        elif isinstance(api_data, dict):
+            for key in possible_item_keys:
+                if key in api_data and isinstance(api_data[key], list):
+                    item_list = api_data[key]
+                    break
+            if not item_list: # If no common key found, try to grab the first list found in the dict values
+                for value in api_data.values():
+                    if isinstance(value, list):
+                        item_list = value
+                        logger.warning(f"Found item list under an unexpected key for '{site_name}'. Please verify mapping.")
+                        break
+
+        if not item_list:
+            logger.warning(f"Could not find a list of items in API response from '{site_name}'. Response: {str(api_data)[:200]}")
+            return results
+
+        for item in item_list:
+            if not isinstance(item, dict):
+                logger.warning(f"Skipping non-dictionary item in API response from '{site_name}': {str(item)[:100]}")
+                continue
+
+            # Best-effort mapping (these will likely need to be adjusted per site)
+            # Users will configure these mappings in sites.json via e.g., "api_title_field": "video.title"
+            title = item.get(site_config.get('api_title_field', 'title')) or \
+                    item.get('name') or \
+                    item.get('video_title')
+
+            url = item.get(site_config.get('api_url_field', 'url')) or \
+                  item.get('link') or \
+                  item.get('video_url')
+
+            thumbnail = item.get(site_config.get('api_thumbnail_field', 'thumbnail')) or \
+                        item.get('thumbnail_url') or \
+                        item.get('image') or \
+                        item.get('preview_image')
+
+            duration_str = str(item.get(site_config.get('api_duration_field', 'duration'), ''))
+            rating_str = str(item.get(site_config.get('api_rating_field', 'rating'), ''))
+            views_str = str(item.get(site_config.get('api_views_field', 'views'), ''))
+            author = item.get(site_config.get('api_author_field', 'author')) or \
+                     item.get('uploader') or \
+                     item.get('channel_name')
+
+            if not title or not url:
+                logger.warning(f"Skipping API item from '{site_name}' due to missing title or URL. Item: {str(item)[:100]}")
+                continue
+
+            # Ensure URL is absolute
+            if isinstance(url, str) and not url.startswith(('http://', 'https://')):
+                url = urljoin(site_config.get('base_url', ''), url)
+            if isinstance(thumbnail, str) and not thumbnail.startswith(('http://', 'https://')):
+                thumbnail = urljoin(site_config.get('base_url', ''), thumbnail)
+
+
+            results.append({
+                'title': title,
+                'url': url,
+                'thumbnail': thumbnail or '',
+                'duration_str': duration_str,
+                'duration_sec': parse_duration(duration_str),
+                'rating_str': rating_str,
+                'site_rating': parse_rating(rating_str),
+                'views_str': views_str,
+                'views': parse_views(views_str),
+                'author': author or '',
+                'site': site_name,
+                'source_method': 'api'
+            })
+
+    except requests.exceptions.Timeout:
+        logger.error(f"API request timeout for '{site_name}': {search_url}")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"API request error for '{site_name}': {e}")
+    except Exception as e:
+        logger.error(f"Unexpected error during API call for '{site_name}': {e}")
+
+    if not results:
+        logger.info(f"No results processed from API for '{site_name}' with query '{query}'. This may be due to missing site-specific field mappings in config or an empty API response.")
+
+    return results
