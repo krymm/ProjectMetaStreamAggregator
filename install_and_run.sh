@@ -83,8 +83,8 @@ if [ ! -f "settings.json" ]; then
 fi
 
 # Create cache directory if it doesn't exist
-if [ ! -d "search_cache" ]; then 
-    mkdir search_cache
+if [ ! -d "cache" ]; then
+    mkdir cache
 fi
 
 # Make this script executable

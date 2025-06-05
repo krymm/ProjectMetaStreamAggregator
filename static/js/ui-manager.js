@@ -68,6 +68,150 @@ class UIManager {
         // Help elements
         this.elements.helpModal = document.getElementById('help-modal');
         this.elements.closeHelp = document.getElementById('close-help');
+
+        // Default Search Sites
+        this.elements.defaultSitesListContainer = document.getElementById('default-sites-list-container');
+
+        // Ollama Test
+        this.elements.testOllamaConnectionButton = document.getElementById('test-ollama-connection');
+        this.elements.ollamaTestStatus = document.getElementById('ollama-test-status');
+
+        // Ollama Models
+        this.elements.ollamaModelSelect = document.getElementById('ollama-model-select');
+        this.elements.refreshOllamaModelsButton = document.getElementById('refresh-ollama-models');
+        this.elements.ollamaModelsStatus = document.getElementById('ollama-models-status');
+
+        // Site Configuration Management Elements
+        this.elements.siteConfigSelect = document.getElementById('site-config-select');
+        this.elements.siteConfigAddNewBtn = document.getElementById('site-config-add-new-btn');
+        this.elements.siteConfigDeleteBtn = document.getElementById('site-config-delete-btn');
+        this.elements.siteConfigForm = document.getElementById('site-config-form');
+        this.elements.siteConfigOriginalKey = document.getElementById('site-config-original-key');
+        this.elements.siteConfigSaveBtn = document.getElementById('site-config-save-btn'); // Already in form, but good to have direct ref if needed
+        this.elements.siteConfigStatus = document.getElementById('site-config-status');
+
+        // Individual form fields for site config (add more as needed for specific logic like visibility)
+        this.elements.siteConfigSearchMethod = document.getElementById('site-config-search-method');
+        this.elements.siteConfigName = document.getElementById('site-config-name');
+
+        // Site Config Field Groups
+        this.elements.siteConfigCommonSelectorsGroup = document.getElementById('site-config-common-selectors-group');
+        this.elements.siteConfigScrapeSpecificGroup = document.getElementById('site-config-scrape-specific-group');
+        this.elements.siteConfigApiSpecificGroup = document.getElementById('site-config-api-specific-group');
+        this.elements.siteConfigSearchEngineInfoGroup = document.getElementById('site-config-search-engine-info-group');
+
+        // Backup and Restore Elements
+        this.elements.backupConfigBtn = document.getElementById('backup-config-btn');
+        this.elements.restoreConfigFile = document.getElementById('restore-config-file');
+        this.elements.restoreConfigUploadBtn = document.getElementById('restore-config-upload-btn');
+        this.elements.restoreConfigStatus = document.getElementById('restore-config-status');
+    }
+
+    toggleSiteFormFieldVisibility(searchMethod) {
+        // Helper to show/hide an element or group of elements
+        const setVisible = (element, isVisible) => {
+            if (element) {
+                if (Array.isArray(element)) {
+                    element.forEach(el => el.style.display = isVisible ? '' : 'none');
+                } else {
+                    element.style.display = isVisible ? '' : 'none';
+                }
+            }
+        };
+
+        // Hide all optional groups initially
+        setVisible(this.elements.siteConfigCommonSelectorsGroup, false);
+        setVisible(this.elements.siteConfigScrapeSpecificGroup, false);
+        setVisible(this.elements.siteConfigApiSpecificGroup, false);
+        setVisible(this.elements.siteConfigSearchEngineInfoGroup, false);
+
+        // Show groups based on search method
+        if (searchMethod === 'scrape_search_page') {
+            setVisible(this.elements.siteConfigCommonSelectorsGroup, true);
+            setVisible(this.elements.siteConfigScrapeSpecificGroup, true);
+        } else if (searchMethod === 'api') {
+            setVisible(this.elements.siteConfigCommonSelectorsGroup, true); // Common selectors might be used as fallbacks
+            setVisible(this.elements.siteConfigApiSpecificGroup, true);
+        } else if (['google_site_search', 'bing_site_search', 'duckduckgo_site_search'].includes(searchMethod)) {
+            setVisible(this.elements.siteConfigCommonSelectorsGroup, true); // For extended detail scraping
+            setVisible(this.elements.siteConfigSearchEngineInfoGroup, true);
+        }
+        // If no specific group matches, all optional groups remain hidden. Only basic fields will show.
+    }
+
+    async loadSitesForEditing() {
+        if (!this.elements.siteConfigSelect) return;
+
+        try {
+            const response = await fetch('/api/sites');
+            if (!response.ok) {
+                throw new Error(`Failed to load sites: ${response.status}`);
+            }
+            this.currentSiteConfigs = await response.json(); // Store for later use
+
+            this.elements.siteConfigSelect.innerHTML = '<option value="">-- Select a Site to Edit or Add New --</option>'; // Default option
+
+            for (const key in this.currentSiteConfigs) {
+                const site = this.currentSiteConfigs[key];
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = site.name || key; // Use name, fallback to key
+                this.elements.siteConfigSelect.appendChild(option);
+            }
+
+            // Reset form and button states
+            this.resetSiteConfigForm(); // Clear form fields
+            this.elements.siteConfigDeleteBtn.disabled = true;
+            if (this.elements.siteConfigStatus) this.elements.siteConfigStatus.textContent = '';
+
+        } catch (error) {
+            console.error('Error loading sites for editing:', error);
+            if (this.elements.siteConfigStatus) {
+                this.elements.siteConfigStatus.textContent = `Error loading sites: ${error.message}`;
+                this.elements.siteConfigStatus.className = 'status-message error';
+            }
+            this.elements.siteConfigSelect.innerHTML = '<option value="">Error loading sites</option>';
+            this.currentSiteConfigs = {}; // Reset
+        }
+    }
+
+    resetSiteConfigForm() {
+        if (this.elements.siteConfigForm) {
+            this.elements.siteConfigForm.reset(); // Resets all form fields
+        }
+        if (this.elements.siteConfigOriginalKey) {
+            this.elements.siteConfigOriginalKey.value = ''; // Clear hidden key
+        }
+        if (this.elements.siteConfigName) { // Example: enable name field for add mode
+            this.elements.siteConfigName.disabled = false;
+        }
+        // Set a default search method and trigger visibility update
+        const defaultSearchMethod = 'scrape_search_page';
+        if (this.elements.siteConfigSearchMethod) {
+            this.elements.siteConfigSearchMethod.value = defaultSearchMethod;
+        }
+        this.toggleSiteFormFieldVisibility(defaultSearchMethod);
+        if (this.elements.siteConfigStatus) this.elements.siteConfigStatus.textContent = '';
+        if (this.elements.siteConfigDeleteBtn) this.elements.siteConfigDeleteBtn.disabled = true;
+        if (this.elements.siteConfigSaveBtn) this.elements.siteConfigSaveBtn.textContent = 'Save Site Configuration';
+
+        // Set default popularity multiplier
+        const popularityInput = document.getElementById('site-config-popularity');
+        if (popularityInput) popularityInput.value = '1.0';
+
+        // Clear all API mapping fields
+        const apiMappingFields = ['api_title_field', 'api_url_field', 'api_thumbnail_field', 'api_duration_field', 'api_rating_field', 'api_views_field', 'api_author_field'];
+        apiMappingFields.forEach(fieldId => {
+            const fieldElement = document.getElementById(`site-config-${fieldId}`);
+            if (fieldElement) fieldElement.value = '';
+        });
+         // Clear API specific fields
+        const apiSpecificFields = ['api_url_template', 'api_key', 'api_key_param', 'api_results_path'];
+        apiSpecificFields.forEach(fieldId => {
+            const fieldElement = document.getElementById(`site-config-${fieldId}`);
+            if (fieldElement) fieldElement.value = '';
+        });
+
     }
     
     /**
@@ -87,6 +231,85 @@ class UIManager {
         const brokenExpanded = localStorage.getItem('brokenResultsExpanded');
         if (brokenExpanded) {
             this.brokenResultsExpanded = brokenExpanded === 'true';
+        }
+    }
+
+    async handleRefreshOllamaModels() {
+        const ollamaUrlInput = document.getElementById('ollama-api-url');
+        const ollamaUrl = ollamaUrlInput ? ollamaUrlInput.value.trim() : null;
+
+        if (!this.elements.ollamaModelsStatus || !this.elements.ollamaModelSelect) {
+            console.error("Ollama models status or select element not found in cacheElements.");
+            return;
+        }
+
+        if (!ollamaUrl) {
+            this.elements.ollamaModelsStatus.textContent = 'Please enter an Ollama API URL first.';
+            this.elements.ollamaModelsStatus.className = 'test-status error';
+            this.populateOllamaModelsDropdown([], null); // Clear dropdown
+            return;
+        }
+
+        this.elements.ollamaModelsStatus.textContent = 'Refreshing models...';
+        this.elements.ollamaModelsStatus.className = 'test-status testing';
+
+        try {
+            const response = await fetch('/api/ollama/models', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ollama_api_url: ollamaUrl }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Use this.currentOllamaModel if available (set in openSettingsModal),
+                // otherwise, try to preserve the current selection in the dropdown.
+                const modelToSelect = this.currentOllamaModel || this.elements.ollamaModelSelect.value;
+                this.populateOllamaModelsDropdown(result.models, modelToSelect);
+                this.elements.ollamaModelsStatus.textContent = result.models.length > 0 ? 'Models refreshed.' : 'No models found at this URL.';
+                this.elements.ollamaModelsStatus.className = result.models.length > 0 ? 'test-status success' : 'test-status info';
+                // Clear this.currentOllamaModel after it has been used to populate the dropdown
+                if (this.currentOllamaModel) {
+                    this.currentOllamaModel = null;
+                }
+            } else {
+                this.elements.ollamaModelsStatus.textContent = result.message || 'Failed to refresh models.';
+                this.elements.ollamaModelsStatus.className = 'test-status error';
+                this.populateOllamaModelsDropdown([], null); // Clear dropdown on failure
+            }
+        } catch (error) {
+            console.error('Error refreshing Ollama models:', error);
+            this.elements.ollamaModelsStatus.textContent = 'Failed to refresh models. Check network or console.';
+            this.elements.ollamaModelsStatus.className = 'test-status error';
+            this.populateOllamaModelsDropdown([], null); // Clear dropdown on error
+        }
+    }
+
+    populateOllamaModelsDropdown(models, selectedModel) {
+        if (!this.elements.ollamaModelSelect) {
+            console.error("Ollama model select element not found in cacheElements.");
+            return;
+        }
+        this.elements.ollamaModelSelect.innerHTML = ''; // Clear existing options
+
+        if (models && models.length > 0) {
+            models.forEach(modelName => {
+                const option = document.createElement('option');
+                option.value = modelName;
+                option.textContent = modelName;
+                if (modelName === selectedModel) {
+                    option.selected = true;
+                }
+                this.elements.ollamaModelSelect.appendChild(option);
+            });
+        } else {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No models found (Refresh or check URL)';
+            this.elements.ollamaModelSelect.appendChild(option);
         }
     }
     
@@ -240,6 +463,247 @@ class UIManager {
         this.elements.resetDefaultSettingsButton.addEventListener('click', () => {
             this.resetToDefaultSettings();
         });
+
+        // Ollama Test Connection Button
+        if (this.elements.testOllamaConnectionButton) {
+            this.elements.testOllamaConnectionButton.addEventListener('click', () => {
+                this.handleTestOllamaConnection();
+            });
+        }
+
+        // Ollama Refresh Models Button
+        if (this.elements.refreshOllamaModelsButton) {
+            this.elements.refreshOllamaModelsButton.addEventListener('click', () => {
+                this.handleRefreshOllamaModels();
+            });
+        }
+
+        // Site Configuration Select Change
+        if (this.elements.siteConfigSelect) {
+            this.elements.siteConfigSelect.addEventListener('change', (e) => {
+                const selectedSiteKey = e.target.value;
+                if (selectedSiteKey && this.currentSiteConfigs && this.currentSiteConfigs[selectedSiteKey]) {
+                    this.populateSiteConfigForm(this.currentSiteConfigs[selectedSiteKey], selectedSiteKey);
+                    this.elements.siteConfigDeleteBtn.disabled = false;
+                    if (this.elements.siteConfigName) this.elements.siteConfigName.disabled = false;
+                    if (this.elements.siteConfigSaveBtn) this.elements.siteConfigSaveBtn.textContent = 'Update Selected Site';
+                } else {
+                    this.resetSiteConfigForm();
+                    this.elements.siteConfigDeleteBtn.disabled = true;
+                    if (this.elements.siteConfigSaveBtn) this.elements.siteConfigSaveBtn.textContent = 'Save New Site';
+                }
+            });
+        }
+
+        // Site Configuration Search Method Change
+        if (this.elements.siteConfigSearchMethod) {
+            this.elements.siteConfigSearchMethod.addEventListener('change', (e) => {
+                this.toggleSiteFormFieldVisibility(e.target.value);
+            });
+        }
+
+        // Site Configuration "Add New Site" Button
+        if (this.elements.siteConfigAddNewBtn) {
+            this.elements.siteConfigAddNewBtn.addEventListener('click', () => {
+                this.elements.siteConfigSelect.value = ''; // Deselect any selected site
+                this.resetSiteConfigForm(); // Clear form and set default visibility
+                if (this.elements.siteConfigName) this.elements.siteConfigName.focus();
+                if (this.elements.siteConfigStatus) this.elements.siteConfigStatus.textContent = 'Adding new site. Fill in the details below.';
+                this.elements.siteConfigStatus.className = 'status-message info';
+                this.elements.siteConfigDeleteBtn.disabled = true;
+                if (this.elements.siteConfigSaveBtn) this.elements.siteConfigSaveBtn.textContent = 'Save New Site';
+            });
+        }
+
+        // Site Configuration "Delete Selected Site" Button
+        if (this.elements.siteConfigDeleteBtn) {
+            this.elements.siteConfigDeleteBtn.addEventListener('click', async () => {
+                const siteKey = this.elements.siteConfigOriginalKey.value;
+                if (!siteKey) {
+                    if (this.elements.siteConfigStatus) {
+                        this.elements.siteConfigStatus.textContent = 'No site selected to delete.';
+                        this.elements.siteConfigStatus.className = 'status-message error';
+                    }
+                    return;
+                }
+
+                const siteNameToDelete = this.currentSiteConfigs[siteKey]?.name || siteKey;
+                if (!confirm(`Are you sure you want to delete the site: "${siteNameToDelete}"? This action cannot be undone.`)) {
+                    return;
+                }
+
+                if (this.elements.siteConfigStatus) {
+                    this.elements.siteConfigStatus.textContent = `Deleting ${siteNameToDelete}...`;
+                    this.elements.siteConfigStatus.className = 'status-message info';
+                }
+
+                try {
+                    const response = await fetch(`/api/sites/${siteKey}`, { method: 'DELETE' });
+                    const result = await response.json(); // Expect JSON response even for DELETE
+
+                    if (response.ok) {
+                        if (this.elements.siteConfigStatus) {
+                            this.elements.siteConfigStatus.textContent = result.message || `Site "${siteNameToDelete}" deleted successfully.`;
+                            this.elements.siteConfigStatus.className = 'status-message success';
+                        }
+                        await this.loadSitesForEditing(); // Reload dropdown and reset form
+                        if (window.app && typeof window.app.loadAndDisplaySites === 'function') {
+                            window.app.loadAndDisplaySites(); // Refresh main site list
+                        }
+                    } else {
+                        throw new Error(result.error || `Failed to delete site (status ${response.status})`);
+                    }
+                } catch (error) {
+                    console.error('Error deleting site:', error);
+                    if (this.elements.siteConfigStatus) {
+                        this.elements.siteConfigStatus.textContent = `Error deleting site: ${error.message}`;
+                        this.elements.siteConfigStatus.className = 'status-message error';
+                    }
+                }
+            });
+        }
+
+        // Site Configuration Form Submit (Save/Update)
+        if (this.elements.siteConfigForm) {
+            this.elements.siteConfigForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                // const formData = new FormData(this.elements.siteConfigForm); // Old way
+                const siteData = {};
+                const originalSiteKey = this.elements.siteConfigOriginalKey.value;
+                const form = this.elements.siteConfigForm;
+
+                // Helper to get trimmed value or null if empty (unless field is required)
+                const getVal = (elementName, isRequired = false) => {
+                    const element = form.elements[elementName];
+                    if (element) {
+                        const value = element.value.trim();
+                        return (value === '' && !isRequired) ? null : value;
+                    }
+                    return null;
+                };
+
+                // Helper to get float value or null if empty/invalid
+                const getFloatVal = (elementName, defaultValue = null) => {
+                    const element = form.elements[elementName];
+                    if (element) {
+                        const value = parseFloat(element.value);
+                        return isNaN(value) ? defaultValue : value;
+                    }
+                    return defaultValue;
+                };
+
+                // Common fields
+                siteData.name = getVal('name', true); // Required
+                siteData.base_url = getVal('base_url', true); // Required
+                siteData.search_method = getVal('search_method', true); // Required
+                siteData.popularity_multiplier = getFloatVal('popularity_multiplier', 1.0);
+
+                const currentSearchMethod = siteData.search_method;
+
+                // Define field lists
+                const commonSelectorFields = [
+                    'results_container_selector', 'result_item_selector',
+                    'title_selector', 'video_url_selector', 'thumbnail_selector',
+                    'duration_selector', 'rating_selector', 'views_selector', 'author_selector'
+                ];
+                const scrapeOnlyFields = ['search_url_template', 'next_page_selector'];
+                const apiSpecificFields = [
+                    'api_url_template', 'api_key', 'api_key_param', 'api_results_path',
+                    'api_title_field', 'api_url_field', 'api_thumbnail_field',
+                    'api_duration_field', 'api_rating_field', 'api_views_field', 'api_author_field'
+                ];
+
+                if (currentSearchMethod === 'scrape_search_page') {
+                    scrapeOnlyFields.forEach(field => siteData[field] = getVal(field));
+                    commonSelectorFields.forEach(field => siteData[field] = getVal(field));
+                } else if (currentSearchMethod === 'api') {
+                    apiSpecificFields.forEach(field => siteData[field] = getVal(field));
+                    // For API, also include common selectors as they might be used for detail fetching or as fallbacks
+                    commonSelectorFields.forEach(field => siteData[field] = getVal(field));
+                } else if (['google_site_search', 'bing_site_search', 'duckduckgo_site_search'].includes(currentSearchMethod)) {
+                    // These methods use common selectors for `fetch_extended_details`
+                    commonSelectorFields.forEach(field => {
+                        if (field !== 'next_page_selector') { // next_page_selector is not used by these
+                           siteData[field] = getVal(field);
+                        }
+                    });
+                    // Ensure scrape-specific and API-specific fields are not included or are null
+                    scrapeOnlyFields.forEach(field => siteData[field] = null);
+                    apiSpecificFields.forEach(field => siteData[field] = null);
+                } else {
+                     // Unknown search method or method that doesn't use these fields
+                     // Ensure all optional groups are nulled out or absent
+                    commonSelectorFields.forEach(field => siteData[field] = null);
+                    scrapeOnlyFields.forEach(field => siteData[field] = null);
+                    apiSpecificFields.forEach(field => siteData[field] = null);
+                }
+
+                // Clean up any top-level keys that ended up as null and shouldn't be sent
+                // Or ensure backend handles nulls appropriately by clearing fields.
+                // For now, sending null for fields not relevant to the search_method.
+
+                const isUpdating = originalSiteKey && originalSiteKey !== '';
+                const url = isUpdating ? `/api/sites/${originalSiteKey}` : '/api/sites';
+                const method = isUpdating ? 'PUT' : 'POST';
+
+                if (this.elements.siteConfigStatus) {
+                    this.elements.siteConfigStatus.textContent = `${isUpdating ? 'Updating' : 'Creating'} site...`;
+                    this.elements.siteConfigStatus.className = 'status-message info';
+                }
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(siteData)
+                    });
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        if (this.elements.siteConfigStatus) {
+                            this.elements.siteConfigStatus.textContent = result.message || `Site ${isUpdating ? 'updated' : 'created'} successfully.`;
+                            this.elements.siteConfigStatus.className = 'status-message success';
+                        }
+                        await this.loadSitesForEditing(); // Reload sites list
+                        // If creating new, select it. If updating, re-select it.
+                        const newSiteKey = result.site_key || originalSiteKey;
+                        if (newSiteKey && this.elements.siteConfigSelect) {
+                             this.elements.siteConfigSelect.value = newSiteKey;
+                             // Manually trigger change to re-populate form if needed, or call populate directly
+                             this.populateSiteConfigForm(this.currentSiteConfigs[newSiteKey], newSiteKey);
+                             this.elements.siteConfigDeleteBtn.disabled = false;
+                        }
+                        if (window.app && typeof window.app.loadAndDisplaySites === 'function') {
+                             window.app.loadAndDisplaySites(); // Refresh main site list
+                        }
+                    } else {
+                        let errorMessage = result.error || `Failed to ${isUpdating ? 'update' : 'create'} site.`;
+                        if (result.messages && Array.isArray(result.messages)) {
+                            errorMessage += ` Details: ${result.messages.join('; ')}`;
+                        }
+                        throw new Error(errorMessage);
+                    }
+                } catch (error) {
+                    console.error(`Error ${isUpdating ? 'updating' : 'creating'} site:`, error);
+                    if (this.elements.siteConfigStatus) {
+                        this.elements.siteConfigStatus.textContent = `Error: ${error.message}`;
+                        this.elements.siteConfigStatus.className = 'status-message error';
+                    }
+                }
+            });
+        }
+
+        // Backup and Restore Event Listeners
+        if (this.elements.backupConfigBtn) {
+            this.elements.backupConfigBtn.addEventListener('click', () => {
+                this.handleBackupConfig();
+            });
+        }
+        if (this.elements.restoreConfigUploadBtn) {
+            this.elements.restoreConfigUploadBtn.addEventListener('click', () => {
+                this.handleRestoreConfig();
+            });
+        }
         
         // Results layout change
         if (this.elements.resultsLayoutSelect) {
@@ -352,6 +816,49 @@ class UIManager {
         // Update clear current search button state
         this.updateClearCurrentSearchButtonState();
     }
+
+    async handleTestOllamaConnection() {
+        const ollamaUrlInput = document.getElementById('ollama-api-url'); // Assuming this is the correct ID from cacheElements
+        const ollamaUrl = ollamaUrlInput.value.trim();
+
+        if (!this.elements.ollamaTestStatus) {
+            console.error("Ollama test status element not found in cacheElements.");
+            return;
+        }
+
+        if (!ollamaUrl) {
+            this.elements.ollamaTestStatus.textContent = 'Please enter an Ollama API URL.';
+            this.elements.ollamaTestStatus.className = 'test-status error'; // Add error class
+            return;
+        }
+
+        this.elements.ollamaTestStatus.textContent = 'Testing...';
+        this.elements.ollamaTestStatus.className = 'test-status testing'; // Add testing class
+
+        try {
+            const response = await fetch('/api/ollama/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ollama_api_url: ollamaUrl }),
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.elements.ollamaTestStatus.textContent = result.message || 'Connection successful!';
+                this.elements.ollamaTestStatus.className = 'test-status success';
+            } else {
+                this.elements.ollamaTestStatus.textContent = result.message || 'Connection failed.';
+                this.elements.ollamaTestStatus.className = 'test-status error';
+            }
+        } catch (error) {
+            console.error('Error testing Ollama connection:', error);
+            this.elements.ollamaTestStatus.textContent = 'Failed to test connection. Check network or console.';
+            this.elements.ollamaTestStatus.className = 'test-status error';
+        }
+    }
     
     /**
      * Handle pagination clicks
@@ -433,6 +940,88 @@ class UIManager {
         
         const minimized = window.playerManager.toggleMinimized();
         this.updatePlayerAreaMinimized(minimized);
+    }
+
+    handleBackupConfig() {
+        // Simply redirecting to the backup URL will trigger the download
+        if (this.elements.restoreConfigStatus) { // Use restoreConfigStatus for messages related to backup/restore section
+            this.elements.restoreConfigStatus.textContent = 'Preparing backup file for download...';
+            this.elements.restoreConfigStatus.className = 'status-message info';
+        }
+
+        window.location.href = '/api/config/backup';
+
+        // Clear the message after a short delay, as there's no direct success/error callback for file downloads this way.
+        setTimeout(() => {
+            if (this.elements.restoreConfigStatus && this.elements.restoreConfigStatus.textContent === 'Preparing backup file for download...') {
+                this.elements.restoreConfigStatus.textContent = 'If download did not start, check server logs.';
+                this.elements.restoreConfigStatus.className = 'status-message info';
+            }
+        }, 5000); // 5 seconds
+    }
+
+    async handleRestoreConfig() {
+        if (!this.elements.restoreConfigFile || !this.elements.restoreConfigStatus) {
+            console.error("Restore elements not found in cache.");
+            return;
+        }
+
+        const file = this.elements.restoreConfigFile.files[0];
+        this.elements.restoreConfigStatus.textContent = ''; // Clear previous status
+        this.elements.restoreConfigStatus.className = 'status-message';
+
+
+        if (!file) {
+            this.elements.restoreConfigStatus.textContent = 'Please select a backup file to restore.';
+            this.elements.restoreConfigStatus.className = 'status-message error';
+            return;
+        }
+
+        if (!file.name.endsWith('.json')) {
+            this.elements.restoreConfigStatus.textContent = 'Invalid file type. Please select a .json backup file.';
+            this.elements.restoreConfigStatus.className = 'status-message error';
+            return;
+        }
+
+        this.elements.restoreConfigStatus.textContent = 'Restoring configuration...';
+        this.elements.restoreConfigStatus.className = 'status-message info';
+
+        const formData = new FormData();
+        formData.append('backup_file', file);
+
+        try {
+            const response = await fetch('/api/config/restore', {
+                method: 'POST',
+                body: formData,
+                // 'Content-Type' header is automatically set by browser for FormData
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                const successMessage = result.message || 'Configuration restored successfully!';
+                this.elements.restoreConfigStatus.textContent = successMessage + " The application will now reload.";
+                this.elements.restoreConfigStatus.className = 'status-message success';
+
+                // Alert the user as well, as the status message might be brief or modal closes too fast
+                alert(successMessage + "\nThe application will now reload to apply the new configuration.");
+
+                // Reload the page after a short delay to allow the user to read the message
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2500); // 2.5-second delay
+
+            } else {
+                throw new Error(result.message || `Failed to restore configuration (status ${response.status})`);
+            }
+        } catch (error) {
+            console.error('Error restoring configuration:', error);
+            this.elements.restoreConfigStatus.textContent = `Error: ${error.message}`;
+            this.elements.restoreConfigStatus.className = 'status-message error';
+        } finally {
+            // Clear the file input regardless of outcome
+            this.elements.restoreConfigFile.value = '';
+        }
     }
     
     /**
@@ -525,7 +1114,89 @@ class UIManager {
             document.getElementById('multiplier-effect').value = weights.multiplier_effect || 0.1;
             
             // Advanced options
-            document.getElementById('ollama-api-url').value = settings.ollama_api_url || '';
+            const ollamaApiUrlField = document.getElementById('ollama-api-url');
+            if (ollamaApiUrlField) {
+                ollamaApiUrlField.value = settings.ollama_api_url || '';
+            }
+
+            if (this.elements.ollamaTestStatus) { // Clear previous test status
+                this.elements.ollamaTestStatus.textContent = '';
+                this.elements.ollamaTestStatus.className = 'test-status'; // Reset class
+            }
+            if (this.elements.ollamaModelsStatus) { // Clear previous models status
+                this.elements.ollamaModelsStatus.textContent = '';
+                this.elements.ollamaModelsStatus.className = 'test-status';
+            }
+
+            // Store current model from settings to attempt to preserve selection after refresh
+            this.currentOllamaModel = settings.ollama_model || null;
+            // Fetch and populate models. This will use this.currentOllamaModel for selection.
+            this.handleRefreshOllamaModels();
+
+            // --- Populate Default Search Sites ---
+            // (This part was already correctly implemented in a previous step)
+
+
+            // --- Site Configuration Section ---
+            this.loadSitesForEditing(); // Load sites into the dropdown
+            // Initial state for site config form (usually hidden/disabled until selection or "Add New")
+            this.resetSiteConfigForm(); // Ensure form is clear and visibility is default
+            if(this.elements.siteConfigDeleteBtn) this.elements.siteConfigDeleteBtn.disabled = true;
+            if(this.elements.siteConfigForm) this.elements.siteConfigForm.style.display = 'block'; // Or some initial state
+            if(this.elements.siteConfigStatus) this.elements.siteConfigStatus.textContent = 'Select a site to edit or click "Add New Site".';
+
+            // --- Backup and Restore Section ---
+            if (this.elements.restoreConfigStatus) {
+                this.elements.restoreConfigStatus.textContent = '';
+                this.elements.restoreConfigStatus.className = 'status-message';
+            }
+            if (this.elements.restoreConfigFile) {
+                this.elements.restoreConfigFile.value = ''; // Clear selected file
+            }
+
+
+            // --- Populate Default Search Sites ---
+            try {
+                const sitesResponse = await fetch('/api/sites');
+                if (!sitesResponse.ok) {
+                    throw new Error(`Failed to load sites list: ${sitesResponse.status}`);
+                }
+                const availableSites = await sitesResponse.json();
+
+                this.elements.defaultSitesListContainer.innerHTML = ''; // Clear previous checkboxes
+
+                if (availableSites && availableSites.length > 0) {
+                    const currentDefaultSites = settings.default_search_sites || [];
+                    availableSites.forEach(site => {
+                        const checkboxId = `default-site-${site.name.replace(/\s+/g, '-')}`; // Sanitize name for ID
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = checkboxId;
+                        checkbox.name = 'default_search_sites'; // Group checkboxes
+                        checkbox.value = site.name;
+
+                        if (currentDefaultSites.includes(site.name)) {
+                            checkbox.checked = true;
+                        }
+
+                        const label = document.createElement('label');
+                        label.htmlFor = checkboxId;
+                        label.textContent = site.name;
+
+                        const div = document.createElement('div');
+                        div.classList.add('checkbox-item'); // For styling if needed
+                        div.appendChild(checkbox);
+                        div.appendChild(label);
+                        this.elements.defaultSitesListContainer.appendChild(div);
+                    });
+                } else {
+                    this.elements.defaultSitesListContainer.innerHTML = '<p>No sites available or error fetching sites.</p>';
+                }
+            } catch (sitesError) {
+                console.error('Error loading available sites for settings:', sitesError);
+                this.elements.defaultSitesListContainer.innerHTML = '<p>Error loading sites list. Please try again.</p>';
+            }
+            // --- End Populate Default Search Sites ---
             
             // Show modal
             this.elements.settingsModal.style.display = 'block';
@@ -557,6 +1228,9 @@ class UIManager {
         const scoringWeights = {};
         
         for (const [key, value] of formData.entries()) {
+            // Skip default_search_sites, will be handled separately
+            if (key === 'default_search_sites') continue;
+
             if (key.startsWith('scoring_weights.')) {
                 const weightKey = key.split('.')[1];
                 scoringWeights[weightKey] = parseFloat(value);
@@ -580,6 +1254,10 @@ class UIManager {
         
         // Add scoring weights to settings
         settingsData.scoring_weights = scoringWeights;
+
+        // Collect selected default_search_sites specifically as an array
+        const defaultSitesCheckboxes = document.querySelectorAll('#settings-form input[name="default_search_sites"]:checked');
+        settingsData.default_search_sites = Array.from(defaultSitesCheckboxes).map(cb => cb.value);
         
         try {
             const response = await fetch('/api/settings', {
@@ -645,7 +1323,52 @@ class UIManager {
             document.getElementById('multiplier-effect').value = weights.multiplier_effect || 0.1;
             
             // Advanced options
-            document.getElementById('ollama-api-url').value = defaultSettings.ollama_api_url || '';
+            const ollamaApiUrlFieldDefault = document.getElementById('ollama-api-url');
+            if (ollamaApiUrlFieldDefault) {
+                 ollamaApiUrlFieldDefault.value = defaultSettings.ollama_api_url || '';
+            }
+
+
+            // Set the default model in the dropdown
+            // The dropdown should be populated by handleRefreshOllamaModels if the URL is valid
+            if (this.elements.ollamaModelSelect) {
+                 this.elements.ollamaModelSelect.value = defaultSettings.ollama_model || '';
+            }
+            // Store the default model to be selected after refresh
+            this.currentOllamaModel = defaultSettings.ollama_model || null; // Store before refresh
+
+            // Refresh models based on potentially changed (default) URL
+            // This will populate the dropdown and attempt to select this.currentOllamaModel
+            this.handleRefreshOllamaModels().then(() => {
+                // After models are populated and potentially selected by handleRefreshOllamaModels,
+                // ensure the default model is explicitly set if it wasn't selected by the refresh logic
+                // (e.g., if URL was empty and refresh didn't run, or if model wasn't in list)
+                if (this.elements.ollamaModelSelect) {
+                     // If currentOllamaModel was used by refresh, it's now null.
+                     // If refresh didn't run (e.g. no URL), we still want to set the default model name.
+                    this.elements.ollamaModelSelect.value = defaultSettings.ollama_model || '';
+                }
+            });
+
+
+            // Update default_search_sites checkboxes
+            // This assumes that openSettingsModal has already been called at least once to populate the checkboxes
+            // or that the site list is relatively static and checkboxes are already in the DOM.
+            // If defaultSitesListContainer is empty, this won't do anything, which is acceptable
+            // as openSettingsModal will populate it correctly when next opened.
+            const defaultSites = defaultSettings.default_search_sites || [];
+            const checkboxes = this.elements.defaultSitesListContainer.querySelectorAll('input[name="default_search_sites"]');
+            if (checkboxes.length > 0) { // Only try to update if checkboxes are present
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = defaultSites.includes(checkbox.value);
+                });
+            } else {
+                // If checkboxes are not yet populated (e.g., settings modal never opened),
+                // this part will be handled when openSettingsModal is next called, as it uses
+                // the global settings which would be updated after a save.
+                // For reset, we are just changing the form values, not saving yet.
+                console.warn("Default sites checkboxes not found during reset. They will be populated when settings modal is opened.");
+            }
             
         } catch (error) {
             console.error('Error loading default settings:', error);

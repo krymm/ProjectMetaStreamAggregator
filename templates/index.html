@@ -184,6 +184,17 @@
                             </select>
                         </div>
                     </div>
+
+                    <div class="settings-section">
+                        <h3>Default Search Sites</h3>
+                        <div class="form-group">
+                            <label for="default-search-sites">Default Search Sites (pre-selected):</label>
+                            <div id="default-sites-list-container" class="checkbox-group">
+                                <!-- Checkboxes will be populated by JavaScript -->
+                            </div>
+                            <small>Sites selected here will be automatically checked when the page loads.</small>
+                        </div>
+                    </div>
                     
                     <div class="settings-section">
                         <h3>Ranking Weights</h3>
@@ -214,10 +225,179 @@
                         
                         <div class="form-group">
                             <label for="ollama-api-url">Ollama API URL:</label>
-                            <input type="text" id="ollama-api-url" name="ollama_api_url">
+                            <input type="text" id="ollama-api-url" name="ollama_api_url" class="form-control">
                         </div>
+                        <div class="form-group">
+                            <button type="button" id="test-ollama-connection" class="button small">Test Connection</button>
+                            <span id="ollama-test-status" class="test-status"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="ollama-model-select">Ollama Model:</label>
+                            <select id="ollama-model-select" name="ollama_model" class="form-control">
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                            <button type="button" id="refresh-ollama-models" class="button small">Refresh Models</button>
+                        </div>
+                        <span id="ollama-models-status" class="test-status"></span>
                     </div>
                     
+                    <hr class="settings-divider"> <!-- Divider before new major section -->
+
+                    <!-- Site Configuration Section -->
+                    <div class="settings-section site-configuration-section">
+                        <h3>Site Configuration Management</h3>
+
+                        <div class="site-selection-controls">
+                            <div class="form-group">
+                                <label for="site-config-select">Select Site to Edit:</label>
+                                <select id="site-config-select" class="form-control"></select>
+                            </div>
+                            <div class="site-action-buttons">
+                                <button type="button" id="site-config-add-new-btn" class="button small">Add New Site</button>
+                                <button type="button" id="site-config-delete-btn" class="button small danger" disabled>Delete Selected Site</button>
+                            </div>
+                        </div>
+
+                        <div id="site-config-form"> <!-- Changed from form to div -->
+                            <input type="hidden" id="site-config-original-key" name="original_site_key">
+
+                            <h4>Basic Info</h4>
+                            <div class="form-group">
+                                <label for="site-config-name">Site Name:</label>
+                                <input type="text" id="site-config-name" name="name" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="site-config-base-url">Base URL:</label>
+                                <input type="url" id="site-config-base-url" name="base_url" class="form-control" required placeholder="https://www.example.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="site-config-search-method">Search Method:</label>
+                                <select id="site-config-search-method" name="search_method" class="form-control">
+                                    <option value="scrape_search_page">Scrape Search Page</option>
+                                    <option value="google_site_search">Google Site Search</option>
+                                    <option value="bing_site_search">Bing Site Search</option>
+                                    <option value="duckduckgo_site_search">DuckDuckGo Site Search</option>
+                                    <option value="api">Custom API</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="site-config-popularity">Popularity Multiplier:</label>
+                                <input type="number" id="site-config-popularity" name="popularity_multiplier" class="form-control" min="0" max="5" step="0.1" value="1.0">
+                            </div>
+
+                            <div id="site-config-common-selectors-group" class="site-config-group"> <!-- Common for scrape and API (selectors) -->
+                                <h4>Selectors (for Scrape & some API fallbacks)</h4>
+                                <div class="form-group">
+                                    <label for="site-config-results-container">Results Container Selector:</label>
+                                    <input type="text" id="site-config-results-container" name="results_container_selector" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-result-item">Result Item Selector:</label>
+                                    <input type="text" id="site-config-result-item" name="result_item_selector" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-title">Title Selector:</label>
+                                    <input type="text" id="site-config-title" name="title_selector" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-video-url">Video URL Selector (href):</label>
+                                    <input type="text" id="site-config-video-url" name="video_url_selector" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-thumbnail">Thumbnail Selector (src):</label>
+                                    <input type="text" id="site-config-thumbnail" name="thumbnail_selector" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-duration">Duration Selector:</label>
+                                    <input type="text" id="site-config-duration" name="duration_selector" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-rating">Rating Selector:</label>
+                                    <input type="text" id="site-config-rating" name="rating_selector" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-views">Views Selector:</label>
+                                    <input type="text" id="site-config-views" name="views_selector" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-author">Author Selector:</label>
+                                    <input type="text" id="site-config-author" name="author_selector" class="form-control">
+                                </div>
+                            </div>
+
+                            <div id="site-config-scrape-specific-group" class="site-config-group">
+                                <h4>Scrape Specific</h4>
+                                <div class="form-group">
+                                    <label for="site-config-search-url">Search URL Template (use {query} and {page}):</label>
+                                    <input type="text" id="site-config-search-url" name="search_url_template" class="form-control" placeholder="e.g., /search?q={query}&p={page}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-next-page">Next Page Selector (href):</label>
+                                    <input type="text" id="site-config-next-page" name="next_page_selector" class="form-control">
+                                </div>
+                            </div>
+
+                            <div id="site-config-api-specific-group" class="site-config-group">
+                                <h4>API Specific Configuration</h4>
+                                <div class="form-group">
+                                    <label for="site-config-api-url-template">API URL Template (use {query}):</label>
+                                    <input type="text" id="site-config-api-url-template" name="api_url_template" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-api-key">API Key (Optional):</label>
+                                    <input type="password" id="site-config-api-key" name="api_key" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-api-key-param">API Key Param Name (or 'header:HeaderName'):</label>
+                                    <input type="text" id="site-config-api-key-param" name="api_key_param" class="form-control" placeholder="e.g., apikey or header:X-Api-Key">
+                                </div>
+                                <div class="form-group">
+                                    <label for="site-config-api-results-path">API Results Path (e.g., data.videos or items):</label>
+                                    <input type="text" id="site-config-api-results-path" name="api_results_path" class="form-control">
+                                </div>
+                                <h5>API Field Mapping (JSON path from result item)</h5>
+                                <div class="form-group"><label for="site-config-api-title-field">Title Field:</label><input type="text" id="site-config-api-title-field" name="api_title_field" class="form-control"></div>
+                                <div class="form-group"><label for="site-config-api-url-field">URL Field:</label><input type="text" id="site-config-api-url-field" name="api_url_field" class="form-control"></div>
+                                <div class="form-group"><label for="site-config-api-thumbnail-field">Thumbnail Field:</label><input type="text" id="site-config-api-thumbnail-field" name="api_thumbnail_field" class="form-control"></div>
+                                <div class="form-group"><label for="site-config-api-duration-field">Duration Field:</label><input type="text" id="site-config-api-duration-field" name="api_duration_field" class="form-control"></div>
+                                <div class="form-group"><label for="site-config-api-rating-field">Rating Field:</label><input type="text" id="site-config-api-rating-field" name="api_rating_field" class="form-control"></div>
+                                <div class="form-group"><label for="site-config-api-views-field">Views Field:</label><input type="text" id="site-config-api-views-field" name="api_views_field" class="form-control"></div>
+                                <div class="form-group"><label for="site-config-api-author-field">Author Field:</label><input type="text" id="site-config-api-author-field" name="api_author_field" class="form-control"></div>
+                            </div>
+
+                            <div id="site-config-search-engine-info-group" class="site-config-group">
+                                <p><em>Note: For Google, Bing, and DuckDuckGo search methods, most selectors above are used for fetching extended details from the result pages, not for the initial search. Ensure 'Base URL' is the primary domain of the site you are targeting with these search engines.</em></p>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="site-config-save-btn" class="button primary">Save Site Configuration</button> <!-- Changed type to button -->
+                            </div>
+                        </div> <!-- Changed from /form to /div -->
+                        <div id="site-config-status" class="status-message"></div>
+                    </div>
+                    <!-- End Site Configuration Section -->
+
+                    <hr class="settings-divider">
+
+                    <!-- Backup and Restore Section -->
+                    <div class="settings-section backup-restore-section">
+                        <h3>Backup & Restore Configuration</h3>
+                        <div class="form-group">
+                            <button type="button" id="backup-config-btn" class="button">Backup All Configurations</button>
+                            <small>Download a JSON file containing all your settings and site configurations.</small>
+                        </div>
+                        <hr>
+                        <div class="form-group">
+                            <label for="restore-config-file">Restore Configurations from File:</label>
+                            <input type="file" id="restore-config-file" accept=".json" class="form-control-file">
+                        </div>
+                        <div class="form-group">
+                            <button type="button" id="restore-config-upload-btn" class="button primary">Upload and Restore</button>
+                        </div>
+                        <div id="restore-config-status" class="status-message"></div>
+                    </div>
+                    <!-- End Backup and Restore Section -->
+
                     <div class="form-actions">
                         <button type="submit" class="button primary">Save Settings</button>
                         <button type="button" id="reset-default-settings" class="button">Reset to Defaults</button>

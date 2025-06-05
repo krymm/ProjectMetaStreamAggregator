@@ -18,7 +18,8 @@ DEFAULT_SETTINGS = {
     "google_search_engine_id": None,
     "bing_api_key": None,
     "duckduckgo_api_key": None,
-    "ollama_api_url": "http://localhost:11434/api/generate",
+    "ollama_api_url": "http://localhost:11434/api/generate", # Default includes /api/generate
+    "ollama_model": "llama3", # Default model
     "results_per_page_default": 100,
     "max_pages_per_site": 1,
     "check_links_default": True,
@@ -225,3 +226,33 @@ def save_settings(settings_data):
 def load_default_settings():
     """Returns the default settings without any user customizations."""
     return DEFAULT_SETTINGS.copy()
+
+def save_sites_config(sites_data):
+    """Saves the complete sites configuration to sites.json.
+
+    Args:
+        sites_data (dict): A dictionary containing all site configurations.
+
+    Returns:
+        bool: True if saving was successful, False otherwise.
+    """
+    try:
+        # Basic validation: ensure sites_data is a dictionary
+        if not isinstance(sites_data, dict):
+            logger.error("Invalid sites_data format: must be a dictionary.")
+            return False
+
+        # Further validation could be added here to check structure of each site_config in sites_data
+        # For example, ensuring each site has 'name', 'base_url', etc.
+        # This would be similar to the validation in load_sites_config.
+
+        with open(SITES_CONFIG_PATH, 'w') as f:
+            json.dump(sites_data, f, indent=2)
+        logger.info(f"Sites configuration saved to {SITES_CONFIG_PATH}")
+        return True
+    except IOError as e:
+        logger.error(f"Error saving sites configuration to {SITES_CONFIG_PATH}: {e}")
+        return False
+    except Exception as e: # Catch any other unexpected errors e.g. during JSON serialization
+        logger.error(f"Unexpected error saving sites configuration: {e}")
+        return False

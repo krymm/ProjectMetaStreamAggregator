@@ -59,14 +59,216 @@ def index():
 
 @app.route('/api/sites', methods=['GET'])
 def get_sites():
-    """ Returns the list of configured site names and base URLs. """
+    """ Returns the full sites configuration. """
     try:
-        site_list = [{'name': name, 'base_url': conf.get('base_url')}
-                    for name, conf in SITES_CONFIG.items()]
-        return jsonify(site_list)
+        # SITES_CONFIG is already loaded from config_manager.load_sites_config() at startup
+        # and potentially updated by other CRUD operations.
+        # For consistency, we can reload it here, or trust the in-memory version.
+        # Reloading ensures it's always the freshest from disk if external changes were possible,
+        # but for a single-process app, the in-memory SITES_CONFIG should be authoritative.
+        # Let's return the current in-memory SITES_CONFIG.
+        return jsonify(SITES_CONFIG)
     except Exception as e:
-        logger.error(f"Error getting sites: {e}")
-        return jsonify({"error": f"Error getting sites: {str(e)}"}), 500
+        logger.error(f"Error getting sites config: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"Error getting sites configuration: {str(e)}"}), 500
+
+def generate_site_key(site_name):
+    """Generates a safe key from a site name."""
+    # Convert to lowercase, replace spaces with underscores, remove unsafe characters
+    key = site_name.lower().replace(' ', '_')
+    key = ''.join(c for c in key if c.isalnum() or c == '_')
+    # Ensure key is not empty after sanitization
+    if not key:
+        key = "unnamed_site"
+
+    # Ensure uniqueness if this key already exists
+    original_key = key
+    counter = 1
+    while key in SITES_CONFIG:
+        key = f"{original_key}_{counter}"
+        counter += 1
+    return key
+
+def validate_site_config_data(site_data, is_new_site=True):
+    """
+    Validates site configuration data.
+    Returns a list of error messages, or an empty list if valid.
+    """
+    errors = []
+    required_fields = ['name', 'base_url', 'search_method']
+    for field in required_fields:
+        if field not in site_data or not site_data[field]:
+            errors.append(f"Missing required field: '{field}'.")
+
+    if 'name' in site_data and not isinstance(site_data['name'], str):
+        errors.append("'name' must be a string.")
+    if 'base_url' in site_data and not isinstance(site_data['base_url'], str): # Basic URL format check could be added
+        errors.append("'base_url' must be a string.")
+
+    search_method = site_data.get('search_method')
+    if search_method:
+        if not isinstance(search_method, str):
+            errors.append("'search_method' must be a string.")
+        elif search_method == 'scrape_search_page' and not site_data.get('search_url_template'):
+            errors.append("If 'search_method' is 'scrape_search_page', then 'search_url_template' is required.")
+        # Add more search_method specific validations if needed
+
+    # Check for duplicate names if it's a new site or if the name is being changed on an update
+    # For simplicity in this example, we'll only check for new sites.
+    # Update logic (PUT) would need to handle name changes more carefully.
+    if is_new_site and 'name' in site_data:
+        if any(existing_site['name'] == site_data['name'] for existing_site in SITES_CONFIG.values()):
+            errors.append(f"Site name '{site_data['name']}' already exists.")
+
+    # Example of type check for optional fields
+    if 'popularity_multiplier' in site_data and site_data['popularity_multiplier'] is not None:
+        if not isinstance(site_data['popularity_multiplier'], (int, float)):
+            errors.append("'popularity_multiplier' must be a number.")
+        elif not (0 <= site_data['popularity_multiplier'] <= 5): # Example range
+             errors.append("'popularity_multiplier' must be between 0 and 5.")
+
+
+    # Validate scoring_weights structure if present
+    if 'scoring_weights' in site_data and site_data['scoring_weights'] is not None:
+        if not isinstance(site_data['scoring_weights'], dict):
+            errors.append("'scoring_weights' must be an object (dictionary).")
+        else:
+            for weight_key, weight_val in site_data['scoring_weights'].items():
+                if not isinstance(weight_val, (int, float)):
+                    errors.append(f"Scoring weight '{weight_key}' must be a number.")
+                elif not (0 <= weight_val <= 1): # Weights usually are 0-1
+                    errors.append(f"Scoring weight '{weight_key}' must be between 0 and 1.")
+
+    return errors
+
+@app.route('/api/sites', methods=['POST'])
+def create_site():
+    """Creates a new site configuration."""
+    global SITES_CONFIG # Ensure we are modifying the global variable
+    try:
+        new_site_data = request.json
+        if not new_site_data:
+            return jsonify({"error": "No data provided for new site."}), 400
+
+        validation_errors = validate_site_config_data(new_site_data, is_new_site=True)
+        if validation_errors:
+            return jsonify({"error": "Validation failed.", "messages": validation_errors}), 400
+
+        site_name = new_site_data['name']
+        site_key = generate_site_key(site_name)
+
+        # Ensure the final generated key is truly unique (should be handled by generate_site_key, but double check)
+        if site_key in SITES_CONFIG:
+             # This case should ideally not be hit if generate_site_key works perfectly
+            return jsonify({"error": f"Site key '{site_key}' conflict. Try a different name."}), 409
+
+        # Add the new site to the in-memory configuration
+        SITES_CONFIG[site_key] = new_site_data
+
+        # Save the entire updated SITES_CONFIG to sites.json
+        if config_manager.save_sites_config(SITES_CONFIG):
+            logger.info(f"Site '{site_name}' created with key '{site_key}'.")
+            # Return the newly created site data along with its key
+            return jsonify({"message": "Site created successfully.", "site_key": site_key, "site_data": new_site_data}), 201
+        else:
+            # If saving failed, attempt to roll back the in-memory change
+            SITES_CONFIG.pop(site_key, None)
+            logger.error("Failed to save sites configuration after creating new site.")
+            return jsonify({"error": "Failed to save sites configuration."}), 500
+
+    except Exception as e:
+        logger.error(f"Error creating new site: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
+
+@app.route('/api/sites/<string:site_key>', methods=['PUT'])
+def update_site(site_key):
+    """Updates an existing site configuration."""
+    global SITES_CONFIG
+    try:
+        if site_key not in SITES_CONFIG:
+            return jsonify({"error": "Site not found."}), 404
+
+        updated_site_data = request.json
+        if not updated_site_data:
+            return jsonify({"error": "No data provided for site update."}), 400
+
+        # Validate the updated data. is_new_site=False because we are updating.
+        # The name validation needs to be slightly different for updates:
+        # The name in updated_site_data should not clash with any *other* existing site's name.
+        original_name = SITES_CONFIG[site_key].get('name')
+        new_name = updated_site_data.get('name')
+
+        # Perform standard validation on the fields provided
+        validation_errors = validate_site_config_data(updated_site_data, is_new_site=False) # Standard checks
+
+        # Additional check for name uniqueness if name is being changed
+        if new_name and new_name != original_name:
+            for key, config in SITES_CONFIG.items():
+                if key != site_key and config.get('name') == new_name:
+                    validation_errors.append(f"Site name '{new_name}' already exists for another site.")
+                    break
+
+        if validation_errors:
+            return jsonify({"error": "Validation failed.", "messages": validation_errors}), 400
+
+        # Preserve the original site key, even if the name inside the config changes.
+        # Update the in-memory configuration
+        SITES_CONFIG[site_key].update(updated_site_data) # Merge update
+        # Or full replace: SITES_CONFIG[site_key] = updated_site_data
+        # Full replace is often cleaner if all fields are expected in the PUT payload.
+        # Let's assume full replacement for now, but ensure 'name' is part of payload.
+        if 'name' not in updated_site_data : # If name is critical and not in payload
+             updated_site_data['name'] = original_name # Keep original name if not provided in update
+        SITES_CONFIG[site_key] = updated_site_data
+
+
+        if config_manager.save_sites_config(SITES_CONFIG):
+            logger.info(f"Site '{site_key}' updated successfully.")
+            return jsonify({"message": "Site updated successfully.", "site_key": site_key, "site_data": SITES_CONFIG[site_key]})
+        else:
+            # This is tricky: if save fails, we should ideally roll back SITES_CONFIG.
+            # For simplicity, we're not fully rolling back here, but a real app might need to.
+            # Reloading from disk would be one way to achieve a rollback.
+            logger.error("Failed to save sites configuration after updating site.")
+            # Attempt to reload from disk to revert in-memory changes
+            SITES_CONFIG = config_manager.load_sites_config()
+            return jsonify({"error": "Failed to save sites configuration. In-memory changes may have been reverted."}), 500
+
+    except Exception as e:
+        logger.error(f"Error updating site '{site_key}': {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
+
+@app.route('/api/sites/<string:site_key>', methods=['DELETE'])
+def delete_site(site_key):
+    """Deletes an existing site configuration."""
+    global SITES_CONFIG
+    try:
+        if site_key not in SITES_CONFIG:
+            return jsonify({"error": "Site not found."}), 404
+
+        deleted_site_name = SITES_CONFIG[site_key].get('name', site_key) # For logging
+
+        # Remove the site from the in-memory configuration
+        SITES_CONFIG.pop(site_key)
+
+        if config_manager.save_sites_config(SITES_CONFIG):
+            logger.info(f"Site '{deleted_site_name}' (key: {site_key}) deleted successfully.")
+            # 204 No Content is often used for successful DELETE with no body
+            # However, returning a JSON message can be more informative for clients.
+            return jsonify({"message": f"Site '{deleted_site_name}' deleted successfully."})
+        else:
+            # If saving failed, this is problematic. Attempt to reload to revert.
+            logger.error("Failed to save sites configuration after deleting site.")
+            SITES_CONFIG = config_manager.load_sites_config() # Revert in-memory change
+            return jsonify({"error": "Failed to save sites configuration. Deletion may not be persisted."}), 500
+
+    except Exception as e:
+        logger.error(f"Error deleting site '{site_key}': {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
 
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
@@ -441,6 +643,283 @@ def ollama_process():
          logger.error(f"Error processing Ollama request: {e}")
          logger.error(f"Traceback: {traceback.format_exc()}")
          return jsonify({"error": f"Failed to process request with Ollama: {e}"}), 500
+
+@app.route('/api/ollama/test', methods=['POST'])
+def ollama_test_connection():
+    """Tests the connection to a given Ollama API URL."""
+    try:
+        data = request.json
+        ollama_api_url_base = data.get('ollama_api_url')
+
+        if not ollama_api_url_base:
+            return jsonify({"success": False, "message": "Missing 'ollama_api_url' in request."}), 400
+
+        # Ensure the base URL doesn't end with /api/generate or other API paths
+        if ollama_api_url_base.endswith('/api/generate'):
+            ollama_api_url_base = ollama_api_url_base[:-len('/api/generate')]
+        elif ollama_api_url_base.endswith('/api/tags'):
+            ollama_api_url_base = ollama_api_url_base[:-len('/api/tags')]
+
+        # Remove trailing slash if any, before appending /api/tags
+        if ollama_api_url_base.endswith('/'):
+            ollama_api_url_base = ollama_api_url_base[:-1]
+
+        test_url = f"{ollama_api_url_base}/api/tags"
+        logger.info(f"Testing Ollama connection to: {test_url}")
+
+        try:
+            # Use a timeout for the request (e.g., 10 seconds)
+            response = requests.get(test_url, timeout=10)
+
+            # Check if the request was successful (status code 200)
+            # Ollama's /api/tags should return 200 even if no models are present (empty list)
+            if response.status_code == 200:
+                try:
+                    # Further check if the response is valid JSON and has a 'models' key (expected for /api/tags)
+                    response_json = response.json()
+                    if "models" in response_json and isinstance(response_json["models"], list):
+                         logger.info(f"Ollama connection to {test_url} successful. Found {len(response_json['models'])} models.")
+                         return jsonify({"success": True, "message": "Ollama connection successful. Found models."})
+                    else:
+                        logger.warning(f"Ollama connection to {test_url} successful but response format is unexpected: {response.text[:200]}")
+                        return jsonify({"success": True, "message": "Ollama connection successful but response format for /api/tags is not as expected."})
+                except ValueError: # Includes JSONDecodeError
+                    logger.warning(f"Ollama connection to {test_url} successful but response is not valid JSON: {response.text[:200]}")
+                    return jsonify({"success": True, "message": "Ollama connection successful but response is not valid JSON."})
+            else:
+                logger.warning(f"Ollama connection to {test_url} failed. Status code: {response.status_code}, Response: {response.text[:200]}")
+                return jsonify({"success": False, "message": f"Ollama connection failed. Status code: {response.status_code}. Response: {response.text[:100]}"})
+
+        except requests.exceptions.Timeout:
+            logger.error(f"Ollama connection to {test_url} timed out.")
+            return jsonify({"success": False, "message": "Ollama connection timed out."})
+        except requests.exceptions.ConnectionError:
+            logger.error(f"Ollama connection to {test_url} refused or failed.")
+            return jsonify({"success": False, "message": "Ollama connection refused or failed. Check if Ollama is running and accessible."})
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Ollama connection test to {test_url} failed with an error: {e}")
+            return jsonify({"success": False, "message": f"Ollama connection failed: {str(e)}"})
+
+    except Exception as e:
+        logger.error(f"Error in /api/ollama/test endpoint: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"success": False, "message": f"An unexpected error occurred: {str(e)}"}), 500
+
+@app.route('/api/ollama/models', methods=['POST'])
+def ollama_get_models():
+    """Fetches available models from a given Ollama API URL."""
+    try:
+        data = request.json
+        ollama_api_url_base = data.get('ollama_api_url')
+
+        if not ollama_api_url_base:
+            return jsonify({"success": False, "message": "Missing 'ollama_api_url' in request.", "models": []}), 400
+
+        # Sanitize the base URL (remove common API paths and trailing slashes)
+        if ollama_api_url_base.endswith('/api/generate'):
+            ollama_api_url_base = ollama_api_url_base[:-len('/api/generate')]
+        elif ollama_api_url_base.endswith('/api/tags'):
+            ollama_api_url_base = ollama_api_url_base[:-len('/api/tags')]
+
+        if ollama_api_url_base.endswith('/'):
+            ollama_api_url_base = ollama_api_url_base[:-1]
+
+        tags_url = f"{ollama_api_url_base}/api/tags"
+        logger.info(f"Fetching Ollama models from: {tags_url}")
+
+        try:
+            response = requests.get(tags_url, timeout=15) # Increased timeout slightly for model listing
+
+            if response.status_code == 200:
+                try:
+                    response_json = response.json()
+                    if "models" in response_json and isinstance(response_json["models"], list):
+                        model_names = [model.get("name") for model in response_json["models"] if model.get("name")]
+                        logger.info(f"Successfully fetched {len(model_names)} models from {tags_url}.")
+                        return jsonify({"success": True, "models": model_names})
+                    else:
+                        logger.warning(f"Fetched models from {tags_url}, but response format is unexpected: {response.text[:200]}")
+                        return jsonify({"success": False, "message": "Model list format unexpected.", "models": []})
+                except ValueError: # Includes JSONDecodeError
+                    logger.warning(f"Response from {tags_url} is not valid JSON: {response.text[:200]}")
+                    return jsonify({"success": False, "message": "Invalid JSON response from Ollama.", "models": []})
+            else:
+                logger.warning(f"Failed to fetch models from {tags_url}. Status: {response.status_code}, Response: {response.text[:200]}")
+                return jsonify({
+                    "success": False,
+                    "message": f"Ollama API request failed. Status: {response.status_code}. Details: {response.text[:100]}",
+                    "models": []
+                })
+
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout when fetching models from {tags_url}.")
+            return jsonify({"success": False, "message": "Request to Ollama timed out.", "models": []})
+        except requests.exceptions.ConnectionError:
+            logger.error(f"Connection error when fetching models from {tags_url}.")
+            return jsonify({"success": False, "message": "Could not connect to Ollama. Check URL and if Ollama is running.", "models": []})
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error when fetching models from {tags_url}: {e}")
+            return jsonify({"success": False, "message": f"Failed to fetch models: {str(e)}", "models": []})
+
+    except Exception as e:
+        logger.error(f"Error in /api/ollama/models endpoint: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"success": False, "message": f"An unexpected error occurred: {str(e)}", "models": []}), 500
+
+# --- Backup and Restore Endpoints ---
+from datetime import datetime # For timestamp in backup
+
+@app.route('/api/config/backup', methods=['GET'])
+def backup_configuration():
+    """Creates a downloadable JSON backup of current settings and sites configuration."""
+    try:
+        # Load the most current configurations directly from manager functions
+        # This ensures we're backing up what's persisted, not just in-memory state if it could differ.
+        current_settings = config_manager.load_settings()
+        current_sites = config_manager.load_sites_config()
+
+        backup_data = {
+            "backup_version": "1.0",
+            "timestamp": datetime.now().isoformat(),
+            "settings": current_settings,
+            "sites": current_sites
+        }
+
+        response_json = json.dumps(backup_data, indent=2)
+
+        # Create a filename with a timestamp
+        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"metastream_backup_{timestamp_str}.json"
+
+        return Response(
+            response_json,
+            mimetype="application/json",
+            headers={"Content-Disposition": f"attachment;filename={filename}"}
+        )
+    except Exception as e:
+        logger.error(f"Error generating configuration backup: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"Failed to generate backup: {str(e)}"}), 500
+
+@app.route('/api/config/restore', methods=['POST'])
+def restore_configuration():
+    """Restores settings and sites configuration from an uploaded JSON backup file."""
+    global USER_SETTINGS, SITES_CONFIG # To update in-memory configs after restore
+
+    if 'backup_file' not in request.files:
+        return jsonify({"success": False, "message": "No backup file provided."}), 400
+
+    file = request.files['backup_file']
+
+    if file.filename == '':
+        return jsonify({"success": False, "message": "No selected file."}), 400
+
+    if file and file.filename.endswith('.json'):
+        try:
+            # Read file content
+            file_content = file.read().decode('utf-8')
+            restored_data = json.loads(file_content)
+
+            # Validate structure
+            if not isinstance(restored_data, dict):
+                raise ValueError("Backup data is not a valid JSON object.")
+
+            if "settings" not in restored_data or not isinstance(restored_data["settings"], dict):
+                raise ValueError("Backup data is missing 'settings' or it's not a valid object.")
+
+            if "sites" not in restored_data or not isinstance(restored_data["sites"], dict):
+                raise ValueError("Backup data is missing 'sites' or it's not a valid object.")
+
+            # Optional: Check backup_version if you implement versioning
+            # backup_version = restored_data.get("backup_version")
+            # if backup_version != "1.0": # Example version check
+            #     raise ValueError(f"Unsupported backup version: {backup_version}. Expected 1.0.")
+
+            restored_settings = restored_data["settings"]
+            restored_sites = restored_data["sites"]
+
+            # At this point, you might want to perform more detailed validation on the content
+            # of restored_settings and restored_sites to ensure they are well-formed.
+
+            # --- Enhanced Settings Validation ---
+            rs = restored_settings # shorthand
+            if not isinstance(rs.get('cache_expiry_minutes'), (int, float)) and rs.get('cache_expiry_minutes') is not None: # Allow None
+                raise ValueError("'settings.cache_expiry_minutes' must be a number or null.")
+            if not isinstance(rs.get('results_per_page_default'), int) and rs.get('results_per_page_default') is not None: # Allow None
+                raise ValueError("'settings.results_per_page_default' must be an integer or null.")
+            if 'scoring_weights' in rs and rs['scoring_weights'] is not None and not isinstance(rs['scoring_weights'], dict): # Allow None
+                raise ValueError("'settings.scoring_weights' must be an object or null.")
+            if 'default_search_sites' in rs and rs['default_search_sites'] is not None and not isinstance(rs['default_search_sites'], list): # Allow None
+                raise ValueError("'settings.default_search_sites' must be an array or null.")
+            # Ensure all default settings keys are present, fill with default if missing (optional, but good for robustness)
+            for key, default_value in config_manager.DEFAULT_SETTINGS.items():
+                if key not in rs:
+                    rs[key] = default_value
+                # Deeper check for scoring_weights structure if it exists
+                if key == 'scoring_weights' and rs[key] is not None: # if scoring_weights exists and is a dict
+                    for sw_key, sw_default_value in config_manager.DEFAULT_SETTINGS['scoring_weights'].items():
+                        if sw_key not in rs[key]:
+                             rs[key][sw_key] = sw_default_value
+
+            # --- Enhanced Sites Validation ---
+            all_site_validation_errors = []
+            for site_key, site_config_to_validate in restored_sites.items():
+                if not isinstance(site_config_to_validate, dict):
+                    all_site_validation_errors.append(f"Site data for '{site_key}' is not a valid object.")
+                    continue
+
+                # Ensure 'name' field exists for validation, even if it's just the key temporarily
+                if 'name' not in site_config_to_validate:
+                     site_config_to_validate['name'] = site_key
+
+                # is_new_site=False because we are checking structure, not name uniqueness against current live config
+                errors = validate_site_config_data(site_config_to_validate, is_new_site=False)
+                if errors:
+                    all_site_validation_errors.extend([f"Site '{site_key}': {e}" for e in errors])
+
+            if all_site_validation_errors:
+                # Join errors with a newline for better readability if displayed in a textarea or preformatted element
+                error_message_detail = "; ".join(all_site_validation_errors)
+                if len(error_message_detail) > 1000: # Truncate if too long for a typical error message
+                    error_message_detail = error_message_detail[:1000] + "..."
+                raise ValueError(f"Invalid site configurations in backup: {error_message_detail}")
+
+            # Save restored configurations
+            settings_saved = config_manager.save_settings(restored_settings)
+            sites_saved = config_manager.save_sites_config(restored_sites)
+
+            if not settings_saved or not sites_saved:
+                # This is a critical error state. The files might be partially written or inconsistent.
+                # A more robust solution might try to roll back or restore from a temporary pre-restore backup.
+                logger.error("Critical error: Failed to save one or both configuration files during restore.")
+                # Attempt to reload original configs to minimize inconsistent state in memory
+                USER_SETTINGS = config_manager.load_settings()
+                SITES_CONFIG = config_manager.load_sites_config()
+                return jsonify({"success": False, "message": "Failed to save restored configurations. System state might be inconsistent."}), 500
+
+            # Reload configurations into memory
+            USER_SETTINGS = config_manager.load_settings()
+            SITES_CONFIG = config_manager.load_sites_config()
+
+            # Update cache expiry if it was changed in restored settings
+            if 'cache_expiry_minutes' in USER_SETTINGS:
+                 SEARCH_CACHE.expiry_seconds = USER_SETTINGS['cache_expiry_minutes'] * 60
+
+            logger.info("Configuration successfully restored from backup.")
+            return jsonify({"success": True, "message": "Configuration restored successfully. Please refresh the page if UI elements do not update immediately."})
+
+        except json.JSONDecodeError:
+            logger.error("Error decoding JSON from backup file.")
+            return jsonify({"success": False, "message": "Invalid JSON format in backup file."}), 400
+        except ValueError as ve: # Catch our custom validation errors
+            logger.error(f"Validation error in backup file: {ve}")
+            return jsonify({"success": False, "message": f"Invalid backup file structure: {str(ve)}"}), 400
+        except Exception as e:
+            logger.error(f"Error restoring configuration: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return jsonify({"success": False, "message": f"Failed to restore configuration: {str(e)}"}), 500
+    else:
+        return jsonify({"success": False, "message": "Invalid file type. Please upload a .json file."}), 400
 
 # Error handlers
 @app.errorhandler(404)
