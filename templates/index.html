@@ -258,7 +258,7 @@
                             </div>
                         </div>
 
-                        <form id="site-config-form">
+                        <div id="site-config-form"> <!-- Changed from form to div -->
                             <input type="hidden" id="site-config-original-key" name="original_site_key">
 
                             <h4>Basic Info</h4>
@@ -370,9 +370,9 @@
                             </div>
 
                             <div class="form-actions">
-                                <button type="submit" id="site-config-save-btn" class="button primary">Save Site Configuration</button>
+                                <button type="button" id="site-config-save-btn" class="button primary">Save Site Configuration</button> <!-- Changed type to button -->
                             </div>
-                        </form>
+                        </div> <!-- Changed from /form to /div -->
                         <div id="site-config-status" class="status-message"></div>
                     </div>
                     <!-- End Site Configuration Section -->
