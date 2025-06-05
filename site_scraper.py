@@ -349,7 +349,6 @@ def fetch_extended_details(item_url, site_config_for_item_page, source_site_name
     if not any([duration_selector, rating_selector, views_selector, author_selector]):
         logger.debug(f"No relevant selectors found in site_config for {site_config_for_item_page.get('name', 'unknown config')} when fetching details for {item_url}")
         return details
-
     logger.info(f"Fetching extended details for: {item_url} (source: {source_site_name}, using config: {site_config_for_item_page.get('name')})")
 
     try:
@@ -414,10 +413,9 @@ def execute_google_search(site_name, base_url, query, api_key, cse_id):
         # This 'base_url' is the URL of the site we want to search *on* using Google.
         search_term = f"site:{base_url} {query}"
         logger.info(f"Google Searching on '{base_url}' for query '{query}' (Original site context: '{site_name}')")
-
+     
         res = service.cse().list(q=search_term, cx=cse_id, num=10).execute() # Max 10 per query
         raw_items = res.get('items', [])
-
         for item in raw_items:
             title = item.get('title')
             link = item.get('link')
@@ -516,7 +514,6 @@ def execute_bing_search(site_name, base_url, query, api_key):
                 # Some results might have 'deepLinks' or other structures that could hint at images,
                 # but it's not as direct as Google's pagemap.
                 thumbnail = item.get('thumbnailUrl') # Check if BCP API ever returns this (unlikely for generic web search)
-
                 if title and link:
                     item_domain = urlparse(link).netloc
                     site_config_for_item_page = None
@@ -526,7 +523,6 @@ def execute_bing_search(site_name, base_url, query, api_key):
                             site_config_for_item_page = s_config
                             logger.debug(f"Found matching config '{s_config.get('name')}' for URL '{link}' (Bing result)")
                             break
-
                     extended_details = {}
                     if site_config_for_item_page:
                         if link.startswith(site_config_for_item_page.get('base_url', '')):
@@ -582,12 +578,10 @@ def execute_duckduckgo_search(site_name, base_url, query, api_key=None):
         request_headers.update({
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
-            'Referer': 'https://duckduckgo.com/'
-        })
         
         logger.info(f"DuckDuckGo Searching on '{base_url}' for query '{query}' (Original site context: '{site_name}')")
         time.sleep(random.uniform(1.0, 3.0)) # DDG can be quick to block scrapers
-        
+
         # DDG uses POST for html endpoint sometimes, or GET for main
         # Using GET for html endpoint as it's simpler and often works.
         # response = requests.post(search_ddg_url, headers=request_headers, data=request_params, timeout=20)
@@ -606,6 +600,7 @@ def execute_duckduckgo_search(site_name, base_url, query, api_key=None):
         for element in result_elements:
             try:
                 title_element = element.select_one('.result__title a, .web-result-title a')
+
                 link_element = title_element # Link is usually the same element
                 snippet_element = element.select_one('.result__snippet, .web-result-snippet')
 
@@ -765,7 +760,6 @@ def call_site_api(site_config, query):
                         item_list = value
                         logger.warning(f"Found item list under an unexpected key for '{site_name}'. Please verify mapping.")
                         break
-
         if not item_list:
             logger.warning(f"Could not find a list of items in API response from '{site_name}'. Response: {str(api_data)[:200]}")
             return results
@@ -800,7 +794,6 @@ def call_site_api(site_config, query):
             if not title or not url:
                 logger.warning(f"Skipping API item from '{site_name}' due to missing title or URL. Item: {str(item)[:100]}")
                 continue
-
             # Ensure URL is absolute
             if isinstance(url, str) and not url.startswith(('http://', 'https://')):
                 url = urljoin(site_config.get('base_url', ''), url)
