@@ -18,6 +18,7 @@
             <div class="header-buttons">
                 <button id="cache-button" class="button small">Cache</button>
                 <button id="settings-button" class="button">Settings</button>
+                <button id="manageSitesBtn" class="button">Manage Sites</button> <!-- Added Manage Sites Button -->
                 <button id="help-button" class="button">Help</button>
             </div>
         </header>
@@ -487,9 +488,34 @@
                 </div>
             </div>
         </div>
+
+        <!-- Site Configuration Management View/Modal -->
+        <div id="siteConfigView" class="modal" style="display: none;">
+            <div class="modal-content large"> <!-- Added 'large' class for potentially wider/taller modal -->
+                <span id="closeSiteConfigViewBtn" class="close">&times;</span>
+                <h2>Manage Site Configurations</h2>
+
+                <div class="site-config-toolbar section-toolbar">
+                    <button id="addNewSiteBtn" class="button primary">Add New Site</button>
+                </div>
+
+                <div id="sitesListContainer" class="section-container">
+                    <!-- Site list will be populated here by JavaScript -->
+                </div>
+
+                <div id="siteFormContainer" style="display: none; margin-top: 20px;" class="section-container form-view">
+                    <!-- Add/Edit Site form will be populated here by JavaScript -->
+                </div>
+            </div>
+        </div>
+        <!-- End Site Configuration Management View/Modal -->
+
+        <div id="notificationArea"></div> <!-- Notification Area -->
+
     </div>
     
     <!-- Core JavaScript -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/site-config-manager.js') }}"></script> <!-- Added Site Config Manager JS -->
 </body>
 </html>
