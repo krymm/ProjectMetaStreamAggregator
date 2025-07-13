@@ -4,15 +4,19 @@
   "bing_api_key": null,
   "duckduckgo_api_key": null,
   "ollama_api_url": "http://localhost:11434/api/generate",
-  "results_per_page_default": 100,
-  "default_search_sites": ["ExampleSitePorn"],
+  "ollama_model": "llama3",
+  "results_per_page_default": 50,
+  "max_pages_per_site": 2,
+  "check_links_default": false,
+  "cache_expiry_minutes": 15,
+  "default_search_sites": [
+    "ExampleSitePorn"
+  ],
+  "results_layout": "grid",
   "scoring_weights": {
-    "relevance_weight": 0.50,
-    "rating_weight": 0.30,
-    "views_weight": 0.10,
-    "multiplier_effect": 0.10
-  },
-  "cache_expiry_minutes": 10,
-  "max_pages_per_site": 1,
-  "check_links_default": true
+    "relevance_weight": 0.5,
+    "rating_weight": 0.3,
+    "views_weight": 0.1,
+    "multiplier_effect": 0.1
+  }
 }

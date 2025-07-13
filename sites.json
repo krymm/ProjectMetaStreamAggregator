@@ -16,10 +16,10 @@
     "next_page_selector": "li.page_next a[href]",
     "popularity_multiplier": 0.65,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "Pornhub_Google": {
@@ -29,10 +29,10 @@
     "search_url_template": null,
     "popularity_multiplier": 0.65,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   },
   "XVideos_Scrape": {
@@ -50,12 +50,12 @@
     "views_selector": "span.views",
     "author_selector": "span.name",
     "next_page_selector": "a.next-page[href]",
-    "popularity_multiplier": 0.70,
+    "popularity_multiplier": 0.7,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "XVideos_Google": {
@@ -63,12 +63,12 @@
     "base_url": "https://www.xvideos.com",
     "search_method": "google_site_search",
     "search_url_template": null,
-    "popularity_multiplier": 0.70,
+    "popularity_multiplier": 0.7,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   },
   "YouPorn_Scrape": {
@@ -88,10 +88,10 @@
     "next_page_selector": "a.playbook-pager-next[href]",
     "popularity_multiplier": 0.75,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "YouPorn_Google": {
@@ -101,10 +101,10 @@
     "search_url_template": null,
     "popularity_multiplier": 0.75,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   },
   "Tube8_Scrape": {
@@ -122,12 +122,12 @@
     "views_selector": ".views",
     "author_selector": ".added_by a",
     "next_page_selector": ".pagination_next a[href]",
-    "popularity_multiplier": 0.80,
+    "popularity_multiplier": 0.8,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "Tube8_Google": {
@@ -135,12 +135,12 @@
     "base_url": "https://www.tube8.com",
     "search_method": "google_site_search",
     "search_url_template": null,
-    "popularity_multiplier": 0.80,
+    "popularity_multiplier": 0.8,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   },
   "RedTube_Scrape": {
@@ -158,12 +158,12 @@
     "views_selector": "span.views_count",
     "author_selector": "span.block_by a",
     "next_page_selector": "li.item_next a[href]",
-    "popularity_multiplier": 0.80,
+    "popularity_multiplier": 0.8,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "RedTube_Google": {
@@ -171,12 +171,12 @@
     "base_url": "https://www.redtube.com",
     "search_method": "google_site_search",
     "search_url_template": null,
-    "popularity_multiplier": 0.80,
+    "popularity_multiplier": 0.8,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   },
   "XNXX_Scrape": {
@@ -194,12 +194,12 @@
     "views_selector": "span.views",
     "author_selector": "span.name",
     "next_page_selector": "a.next-page[href]",
-    "popularity_multiplier": 0.70,
+    "popularity_multiplier": 0.7,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "XNXX_Google": {
@@ -207,12 +207,12 @@
     "base_url": "https://www.xnxx.com",
     "search_method": "google_site_search",
     "search_url_template": null,
-    "popularity_multiplier": 0.70,
+    "popularity_multiplier": 0.7,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   },
   "XHamster_Scrape": {
@@ -232,10 +232,10 @@
     "next_page_selector": "a.pagination__item_next[href]",
     "popularity_multiplier": 0.75,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "XHamster_Google": {
@@ -245,10 +245,10 @@
     "search_url_template": null,
     "popularity_multiplier": 0.75,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   },
   "Beeg_Scrape": {
@@ -268,10 +268,10 @@
     "next_page_selector": "a.next-page-link[href]",
     "popularity_multiplier": 1.0,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "Beeg_Google": {
@@ -281,10 +281,10 @@
     "search_url_template": null,
     "popularity_multiplier": 1.0,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   },
   "SpankBang_Scrape": {
@@ -304,10 +304,10 @@
     "next_page_selector": "a.next[href]",
     "popularity_multiplier": 1.0,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "SpankBang_Google": {
@@ -317,10 +317,10 @@
     "search_url_template": null,
     "popularity_multiplier": 1.0,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   },
   "Porno_Scrape": {
@@ -340,10 +340,10 @@
     "next_page_selector": "a.next-page[href]",
     "popularity_multiplier": 1.0,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "Porno_Google": {
@@ -353,10 +353,10 @@
     "search_url_template": null,
     "popularity_multiplier": 1.0,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   },
   "DansMovies_Scrape": {
@@ -376,10 +376,10 @@
     "next_page_selector": "a.next[href]",
     "popularity_multiplier": 1.0,
     "scoring_weights": {
-      "relevance_weight": 0.60,
+      "relevance_weight": 0.6,
       "rating_weight": 0.25,
       "views_weight": 0.05,
-      "multiplier_effect": 0.10
+      "multiplier_effect": 0.1
     }
   },
   "DansMovies_Google": {
@@ -389,10 +389,10 @@
     "search_url_template": null,
     "popularity_multiplier": 1.0,
     "scoring_weights": {
-      "relevance_weight": 0.70,
-      "rating_weight": 0.10,
-      "views_weight": 0.10,
-      "multiplier_effect": 0.10
+      "relevance_weight": 0.7,
+      "rating_weight": 0.1,
+      "views_weight": 0.1,
+      "multiplier_effect": 0.1
     }
   }
 }
