@@ -182,7 +182,8 @@ def rank_and_process(raw_results, sites_config, query, scoring_weights=None):
 
         # --- Normalize Rating and Views ---
         # Ensure site_rating is 0-1 if present
-        normalized_rating = result.get('site_rating', 0.0) # Assume 0 if missing or parsing failed
+        site_rating = result.get('site_rating')
+        normalized_rating = site_rating if site_rating is not None else 0.0
         
         # Basic view normalization (use log scale to prevent outliers from dominating)
         views = result.get('views', 0)
