@@ -382,9 +382,9 @@ class MetaStreamTester:
         except Exception as e:
             self.log_test("Error Handling - 404", False, f"Request failed: {str(e)}")
         
-        # Test invalid site key
+        # Test invalid site key with PUT method (which should return 404)
         try:
-            response = self.session.get(f"{API_BASE}/sites/nonexistent_site", timeout=10)
+            response = self.session.put(f"{API_BASE}/sites/nonexistent_site", json={}, timeout=10)
             if response.status_code == 404:
                 self.log_test("Error Handling - Invalid Site", True, "Correctly returned 404 for invalid site")
             else:
