@@ -578,6 +578,7 @@ def execute_duckduckgo_search(site_name, base_url, query, api_key=None):
         request_headers.update({
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
+        })
         
         logger.info(f"DuckDuckGo Searching on '{base_url}' for query '{query}' (Original site context: '{site_name}')")
         time.sleep(random.uniform(1.0, 3.0)) # DDG can be quick to block scrapers
