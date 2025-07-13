@@ -96,49 +96,131 @@ def validate_site_config_data(site_data, is_new_site=True):
     Returns a list of error messages, or an empty list if valid.
     """
     errors = []
+
+    # --- General Required Fields ---
     required_fields = ['name', 'base_url', 'search_method']
     for field in required_fields:
-        if field not in site_data or not site_data[field]:
-            errors.append(f"Missing required field: '{field}'.")
+        if not site_data.get(field): # Checks for presence and truthiness (not empty string)
+            errors.append(f"Missing or empty required field: '{field}'.")
 
-    if 'name' in site_data and not isinstance(site_data['name'], str):
+    # --- Type and Format Validations for General Fields ---
+    if 'name' in site_data and not isinstance(site_data.get('name'), str):
         errors.append("'name' must be a string.")
-    if 'base_url' in site_data and not isinstance(site_data['base_url'], str): # Basic URL format check could be added
-        errors.append("'base_url' must be a string.")
+
+    base_url = site_data.get('base_url')
+    if base_url:
+        if not isinstance(base_url, str):
+            errors.append("'base_url' must be a string.")
+        elif not (base_url.startswith('http://') or base_url.startswith('https://')):
+            errors.append("'base_url' must start with 'http://' or 'https://'.")
 
     search_method = site_data.get('search_method')
+    valid_search_methods = ['scrape_search_page', 'google_site_search', 'bing_search', 'duckduckgo_search', 'api']
     if search_method:
         if not isinstance(search_method, str):
             errors.append("'search_method' must be a string.")
-        elif search_method == 'scrape_search_page' and not site_data.get('search_url_template'):
-            errors.append("If 'search_method' is 'scrape_search_page', then 'search_url_template' is required.")
-        # Add more search_method specific validations if needed
+        elif search_method not in valid_search_methods:
+            errors.append(f"Invalid 'search_method': {search_method}. Must be one of {valid_search_methods}.")
+    else: # search_method is required, already caught by required_fields check if empty
+        pass
 
-    # Check for duplicate names if it's a new site or if the name is being changed on an update
-    # For simplicity in this example, we'll only check for new sites.
-    # Update logic (PUT) would need to handle name changes more carefully.
-    if is_new_site and 'name' in site_data:
-        if any(existing_site['name'] == site_data['name'] for existing_site in SITES_CONFIG.values()):
-            errors.append(f"Site name '{site_data['name']}' already exists.")
 
-    # Example of type check for optional fields
-    if 'popularity_multiplier' in site_data and site_data['popularity_multiplier'] is not None:
-        if not isinstance(site_data['popularity_multiplier'], (int, float)):
+    # --- Search Method Specific Validations ---
+    if search_method == 'scrape_search_page':
+        scrape_required_fields = {
+            'search_url_template': "Search URL Template",
+            'results_container_selector': "Results Container Selector",
+            'result_item_selector': "Result Item Selector",
+            'title_selector': "Title Selector",
+            'video_url_selector': "Video URL Selector",
+            'thumbnail_selector': "Thumbnail Selector"
+        }
+        for field, display_name in scrape_required_fields.items():
+            if not site_data.get(field):
+                errors.append(f"For 'scrape_search_page' method, '{display_name}' ({field}) is required.")
+            elif not isinstance(site_data.get(field), str):
+                 errors.append(f"'{display_name}' ({field}) must be a string.")
+
+        search_url_template = site_data.get('search_url_template')
+        if search_url_template and not (search_url_template.startswith('http://') or search_url_template.startswith('https://')):
+            errors.append("'search_url_template' for scrape method must be a valid URL.")
+
+    elif search_method == 'api':
+        api_required_fields = {
+            'api_url_template': "API URL Template",
+            'api_title_field': "API Title Field Path",
+            'api_url_field': "API URL Field Path"
+        }
+        for field, display_name in api_required_fields.items():
+            if not site_data.get(field):
+                errors.append(f"For 'api' method, '{display_name}' ({field}) is required.")
+            elif not isinstance(site_data.get(field), str):
+                 errors.append(f"'{display_name}' ({field}) must be a string.")
+
+        api_url_template = site_data.get('api_url_template')
+        if api_url_template and not (api_url_template.startswith('http://') or api_url_template.startswith('https://')):
+            errors.append("'api_url_template' for API method must be a valid URL.")
+
+        # Optional API string fields
+        optional_api_string_fields = ['api_key', 'api_key_param', 'api_thumbnail_field', 'api_duration_field', 'api_rating_field', 'api_views_field', 'api_author_field']
+        for field in optional_api_string_fields:
+            if field in site_data and site_data.get(field) is not None and not isinstance(site_data.get(field), str):
+                 errors.append(f"'{field}' must be a string if provided.")
+
+
+    # --- Name Uniqueness (only for new sites, update logic is handled in PUT route) ---
+    if is_new_site and site_data.get('name'):
+        # Key generation is based on name, so direct name conflict is the primary concern here for user feedback.
+        # The generate_site_key function will handle actual key uniqueness.
+        if any(existing_site.get('name', '').lower() == site_data['name'].lower() for existing_site in SITES_CONFIG.values()):
+            errors.append(f"Site name '{site_data['name']}' already exists. Please choose a unique name.")
+
+    # --- Numeric and Range Validations ---
+    if 'popularity_multiplier' in site_data and site_data.get('popularity_multiplier') is not None:
+        pm = site_data['popularity_multiplier']
+        if not isinstance(pm, (int, float)):
             errors.append("'popularity_multiplier' must be a number.")
-        elif not (0 <= site_data['popularity_multiplier'] <= 5): # Example range
-             errors.append("'popularity_multiplier' must be between 0 and 5.")
+        elif not (0.1 <= pm <= 5.0): # Adjusted min to 0.1 as per form
+             errors.append("'popularity_multiplier' must be between 0.1 and 5.0.")
 
-
-    # Validate scoring_weights structure if present
-    if 'scoring_weights' in site_data and site_data['scoring_weights'] is not None:
-        if not isinstance(site_data['scoring_weights'], dict):
+    # --- Scoring Weights Validation ---
+    if 'scoring_weights' in site_data and site_data.get('scoring_weights') is not None:
+        sw = site_data['scoring_weights']
+        if not isinstance(sw, dict):
             errors.append("'scoring_weights' must be an object (dictionary).")
         else:
-            for weight_key, weight_val in site_data['scoring_weights'].items():
-                if not isinstance(weight_val, (int, float)):
-                    errors.append(f"Scoring weight '{weight_key}' must be a number.")
-                elif not (0 <= weight_val <= 1): # Weights usually are 0-1
-                    errors.append(f"Scoring weight '{weight_key}' must be between 0 and 1.")
+            weight_fields = ['relevance_weight', 'rating_weight', 'views_weight', 'multiplier_effect']
+            main_weights_sum = 0
+            has_main_weights = False
+            for field in weight_fields:
+                if field in sw and sw.get(field) is not None:
+                    if not isinstance(sw[field], (int, float)):
+                        errors.append(f"Scoring weight '{field}' must be a number.")
+                    elif not (0.0 <= sw[field] <= 1.0):
+                        errors.append(f"Scoring weight '{field}' must be between 0.0 and 1.0.")
+                    if field in ['relevance_weight', 'rating_weight', 'views_weight']:
+                        main_weights_sum += sw[field]
+                        has_main_weights = True
+                else: # If a weight is missing, it should not contribute to sum or cause error if section is partial
+                    pass
+
+            # Only validate sum if at least one main weight was provided, and not all are zero
+            # (all zero could mean "use global", though null `scoring_weights` object is better for that)
+            if has_main_weights and abs(main_weights_sum - 1.0) > 0.01 and main_weights_sum != 0:
+                errors.append("If overriding scoring weights, the sum of 'relevance_weight', 'rating_weight', and 'views_weight' should be close to 1.0 (or all be zero to effectively use globals).")
+
+    # --- Optional Selector String Validations ---
+    # For scrape_search_page and video_page_detail_selectors (which share keys)
+    optional_selector_fields = [
+        'results_container_selector', 'result_item_selector', 'title_selector',
+        'video_url_selector', 'thumbnail_selector', 'duration_selector',
+        'rating_selector', 'views_selector', 'author_selector', 'next_page_selector'
+    ]
+    # Required ones are checked above for scrape_search_page method.
+    # This checks type if any other selector is provided.
+    for field in optional_selector_fields:
+        if field in site_data and site_data.get(field) is not None and not isinstance(site_data.get(field), str):
+            errors.append(f"Selector '{field}' must be a string if provided.")
 
     return errors
 
@@ -318,11 +400,23 @@ def update_settings():
             SEARCH_CACHE.expiry_seconds = new_settings_data['cache_expiry_minutes'] * 60
 
         # Save to file
+        # Attempt to save the modified global USER_SETTINGS
         if config_manager.save_settings(USER_SETTINGS):
-            return jsonify({"message": "Settings saved successfully", "settings": USER_SETTINGS})
+            logger.info("User settings saved successfully.")
+            # Return the updated (and saved) settings, masking sensitive ones for the response
+            settings_to_return = USER_SETTINGS.copy()
+            for key_to_mask in ['google_api_key', 'bing_api_key', 'duckduckgo_api_key']:
+                if key_to_mask in settings_to_return and settings_to_return[key_to_mask]:
+                    settings_to_return[key_to_mask] = '********'
+            return jsonify({"message": "Settings saved successfully", "settings": settings_to_return})
         else:
-            # Failed to save, maybe revert in-memory update or warn user
-            return jsonify({"error": "Failed to save settings to file"}), 500
+            logger.error("Failed to save settings to file. Attempting to revert in-memory changes.")
+            # Reload USER_SETTINGS from disk to revert the in-memory changes
+            global USER_SETTINGS # Ensure we are rebinding the global
+            USER_SETTINGS = config_manager.load_settings()
+            # Also need to reset cache expiry to the reloaded setting
+            SEARCH_CACHE.expiry_seconds = USER_SETTINGS.get('cache_expiry_minutes', 10) * 60
+            return jsonify({"error": "Failed to save settings to file. In-memory changes have been reverted."}), 500
     except Exception as e:
         logger.error(f"Error updating settings: {e}")
         logger.error(f"Traceback: {traceback.format_exc()}")
@@ -441,22 +535,41 @@ def perform_search_operation(query, selected_sites, page, use_cache, check_links
         for future in concurrent.futures.as_completed(search_futures):
             site_name = future_to_site.get(future, "unknown")
             try:
-                results = future.result()
-                if results:
-                    all_raw_results.extend(results)
-                    logger.info(f"Got {len(results)} results from {site_name}")
-                else:
-                    logger.warning(f"No results from {site_name}")
-                    site_errors[site_name] = "No results returned"
-            except Exception as exc:
-                # Log error with context
-                logger.error(f"Search failed for {site_name}: {exc}")
-                logger.error(f"Traceback: {traceback.format_exc()}")
-                site_errors[site_name] = str(exc)
+                site_data = future.result() # This can be list of results or an error dict
 
-    logger.info(f"Found {len(all_raw_results)} raw results across {len(selected_configs)} sites")
+                if isinstance(site_data, dict) and site_data.get("error"):
+                    # This site had an unrecoverable error during its operation
+                    error_msg = site_data.get("error_message", "Unknown error from site processing.")
+                    logger.error(f"Error reported from {site_name}: {error_msg}")
+                    site_errors[site_name] = error_msg
+                    # Do not add to all_raw_results
+                elif isinstance(site_data, list):
+                    # This is a list of results (could be empty)
+                    if site_data:
+                        all_raw_results.extend(site_data)
+                        logger.info(f"Got {len(site_data)} results from {site_name}")
+                    else:
+                        logger.info(f"No results returned by {site_name} (operation successful, but no items found).")
+                        # Optionally, add a non-error status message if needed by UI
+                        # site_errors[site_name] = "No items found matching query."
+                        # For now, an empty list from a site without an error flag means success with 0 results.
+                else:
+                    # Unexpected return type from scraper function
+                    logger.error(f"Unexpected data type received from {site_name}: {type(site_data)}. Expected list or error dict.")
+                    site_errors[site_name] = "Received unexpected data format from site handler."
+
+            except Exception as exc:
+                # This catches exceptions if the future itself failed (e.g., unhandled exception in the scraper function)
+                logger.error(f"Search task failed for {site_name}: {exc}")
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                site_errors[site_name] = f"Critical task failure: {str(exc)}"
+
+    logger.info(f"Collected {len(all_raw_results)} raw results across {len(selected_configs)} sites.")
+    if site_errors:
+        logger.warning(f"Encountered errors/issues with some sites: {site_errors}")
+
     debug_info["raw_results_count"] = len(all_raw_results)
-    debug_info["site_errors"] = site_errors
+    debug_info["site_errors"] = site_errors # This now contains more specific error messages
 
     # --- 2. Rank & Process (Includes Deduplication) ---
     # Get scoring weights from settings

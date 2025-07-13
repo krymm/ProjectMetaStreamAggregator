@@ -307,13 +307,28 @@ def scrape_search_page(site_config, query, page=1, max_pages_per_site=1):
 
     # Proper error handling is crucial here!
     except requests.exceptions.Timeout:
-        logger.error(f"Error: Timeout scraping {search_url}")
+        msg = f"Timeout scraping {search_url} for site '{site_config.get('name', 'Unknown')}'"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
+    except requests.exceptions.HTTPError as e:
+        error_message_detail = f"HTTP error {e.response.status_code} scraping {search_url} for site '{site_config.get('name', 'Unknown')}'."
+        try:
+            error_details = e.response.json()
+            error_message_detail += f" Details: {str(error_details)[:200]}"
+        except ValueError:
+            error_message_detail += f" Response: {e.response.text[:200]}"
+        logger.error(error_message_detail)
+        return {"error": True, "error_message": error_message_detail, "results": []}
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error scraping {search_url}: {e}")
+        msg = f"Request error scraping {search_url} for site '{site_config.get('name', 'Unknown')}': {e}"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
     except Exception as e:
-        logger.error(f"Unexpected error scraping {site_config['name']}: {e}") # Catch other potential errors
+        msg = f"Unexpected error scraping {site_config.get('name', 'Unknown')} using URL {search_url}: {e}"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
 
-    return results
+    return results # This now implies success, even if results list is empty
 
 
 def fetch_extended_details(item_url, site_config_for_item_page, source_site_name):
@@ -386,11 +401,19 @@ def fetch_extended_details(item_url, site_config_for_item_page, source_site_name
         logger.debug(f"Fetched details for {item_url}: {details}")
 
     except requests.exceptions.Timeout:
-        logger.warning(f"Timeout fetching extended details from {item_url} (source: {source_site_name})")
+        logger.warning(f"Timeout fetching extended details from {item_url} (source: {source_site_name}, config: {site_config_for_item_page.get('name')})")
+    except requests.exceptions.HTTPError as e:
+        error_message = f"HTTP error {e.response.status_code} fetching extended details from {item_url} (source: {source_site_name}, config: {site_config_for_item_page.get('name')})."
+        try:
+            error_details = e.response.json()
+            error_message += f" Details: {str(error_details)[:200]}"
+        except ValueError:
+            error_message += f" Response: {e.response.text[:200]}"
+        logger.warning(error_message)
     except requests.exceptions.RequestException as e:
-        logger.warning(f"Request error fetching extended details from {item_url} (source: {source_site_name}): {e}")
+        logger.warning(f"Request error fetching extended details from {item_url} (source: {source_site_name}, config: {site_config_for_item_page.get('name')}): {e}")
     except Exception as e:
-        logger.error(f"Unexpected error fetching extended details from {item_url} (source: {source_site_name}): {e}")
+        logger.error(f"Unexpected error fetching extended details from {item_url} (source: {source_site_name}, config: {site_config_for_item_page.get('name')}): {e}")
         # Optionally, re-raise if debugging is needed for unexpected parsing errors
         # raise
 
@@ -401,8 +424,9 @@ def execute_google_search(site_name, base_url, query, api_key, cse_id):
     """ Executes a Google Custom Search for a specific site."""
     results = []
     if not GOOGLE_API_AVAILABLE or not api_key or not cse_id:
-        logger.error("Error: Google API dependencies or credentials missing for Google Search.")
-        return results
+        msg = f"Google API dependencies or credentials missing for Google Search on site '{site_name}'."
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
 
     # Load all site configurations to find matching selectors for result URLs
     all_site_configs = load_sites_config()
@@ -473,17 +497,31 @@ def execute_google_search(site_name, base_url, query, api_key, cse_id):
                 logger.warning(f"Skipping Google CSE item - missing title or link. Item: {str(item)[:100]}")
 
 
+    except GOOGLE_API_AVAILABLE and __import__('googleapiclient.errors').errors.HttpError as e:
+        # More specific error handling for Google API client errors
+        error_content = e.content.decode('utf-8') if e.content else "No details"
+        try:
+            error_json = json.loads(error_content)
+            error_message_detail = error_json.get("error", {}).get("message", error_content)
+        except json.JSONDecodeError:
+            error_message_detail = error_content
+        msg = f"Google API HTTP error for site '{site_name}' (targeting base_url '{base_url}'): {e.resp.status} {error_message_detail[:200]}"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
     except Exception as e:
-        logger.error(f"Error executing Google Search for site '{site_name}' (targeting base_url '{base_url}'): {e}")
+        msg = f"Error executing Google Search for site '{site_name}' (targeting base_url '{base_url}'): {e}"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
 
-    return results
+    return results # Success, even if empty list
 
 def execute_bing_search(site_name, base_url, query, api_key):
     """ Executes a Bing Search API for a specific site."""
     results = []
     if not api_key:
-        logger.error("Error: Bing API key is missing for Bing Search.")
-        return results
+        msg = f"Bing API key is missing for Bing Search on site '{site_name}'."
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
 
     all_site_configs = load_sites_config()
 
@@ -550,12 +588,29 @@ def execute_bing_search(site_name, base_url, query, api_key):
                 else:
                     logger.warning(f"Skipping Bing Search item - missing title or link. Item: {str(item)[:100]}")
 
+    except requests.exceptions.Timeout:
+        msg = f"Timeout connecting to Bing Search API for site '{site_name}' (targeting base_url '{base_url}')"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
+    except requests.exceptions.HTTPError as e:
+        error_message_detail = f"Bing API HTTP error {e.response.status_code} for site '{site_name}' (targeting base_url '{base_url}')."
+        try:
+            error_details = e.response.json()
+            error_message_detail += f" Details: {str(error_details)[:200]}"
+        except ValueError:
+            error_message_detail += f" Response: {e.response.text[:200]}"
+        logger.error(error_message_detail)
+        return {"error": True, "error_message": error_message_detail, "results": []}
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error connecting to Bing Search API for site '{site_name}': {e}")
-    except Exception as e:
-        logger.error(f"Error executing Bing Search for site '{site_name}' (targeting base_url '{base_url}'): {e}")
+        msg = f"Error connecting to Bing Search API for site '{site_name}' (targeting base_url '{base_url}'): {e}"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
+    except Exception as e: # Catch other potential errors during Bing search execution
+        msg = f"Unexpected error executing Bing Search for site '{site_name}' (targeting base_url '{base_url}'): {e}"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
 
-    return results
+    return results # Success, even if empty list
 
 def execute_duckduckgo_search(site_name, base_url, query, api_key=None):
     """ 
@@ -678,12 +733,26 @@ def execute_duckduckgo_search(site_name, base_url, query, api_key=None):
                 logger.warning(f"Error processing a DuckDuckGo result item: {e}. Item: {element.get_text()[:100]}")
                 continue
 
+    except requests.exceptions.Timeout:
+        msg = f"Timeout connecting to DuckDuckGo for site '{site_name}' (targeting base_url '{base_url}')"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
+    except requests.exceptions.HTTPError as e:
+        error_message_detail = f"DuckDuckGo HTTP error {e.response.status_code} for site '{site_name}' (targeting base_url '{base_url}')."
+        # DDG HTML search might not return JSON, so just log text
+        error_message_detail += f" Response: {e.response.text[:200]}"
+        logger.error(error_message_detail)
+        return {"error": True, "error_message": error_message_detail, "results": []}
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error connecting to DuckDuckGo for site '{site_name}': {e}")
+        msg = f"Error connecting to DuckDuckGo for site '{site_name}' (targeting base_url '{base_url}'): {e}"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
     except Exception as e: # Catch broader errors like parsing the whole page
-        logger.error(f"Error executing DuckDuckGo Search for site '{site_name}' (targeting base_url '{base_url}'): {e}")
+        msg = f"Error executing DuckDuckGo Search for site '{site_name}' (targeting base_url '{base_url}'): {e}"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
 
-    return results
+    return results # Success, even if empty list
 
 def call_site_api(site_config, query):
     """
@@ -705,8 +774,9 @@ def call_site_api(site_config, query):
     api_key_param = site_config.get('api_key_param') # Optional, param name for API key
 
     if not api_url_template:
-        logger.error(f"API configuration error for '{site_name}': 'api_url_template' is missing.")
-        return results # Return empty list
+        msg = f"API configuration error for '{site_name}': 'api_url_template' is missing."
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
 
     # --- 2. Construct request ---
     # Replace placeholders in the URL template
@@ -715,8 +785,9 @@ def call_site_api(site_config, query):
     try:
         search_url = api_url_template.format(query=quote_plus(query), api_key=api_key or '')
     except KeyError as e:
-        logger.error(f"Missing placeholder {e} in 'api_url_template' for '{site_name}'. Query: {query}")
-        return results
+        msg = f"Missing placeholder {e} in 'api_url_template' for '{site_name}'. Query: {query}"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
 
     # Prepare headers - some APIs require the key in headers
     request_headers = HEADERS.copy()
@@ -737,8 +808,9 @@ def call_site_api(site_config, query):
         try:
             api_data = response.json()
         except ValueError: # Includes JSONDecodeError
-            logger.error(f"Failed to parse JSON response from '{site_name}' API: {response.text[:200]}")
-            return results # Return empty if parsing fails
+            msg = f"Failed to parse JSON response from '{site_name}' API: {response.text[:200]}"
+            logger.error(msg)
+            return {"error": True, "error_message": msg, "results": []}
 
         # --- 5. Map API response fields to your common result format ---
         # This is a best-effort generic mapping. Users MUST customize this per API.
@@ -761,8 +833,11 @@ def call_site_api(site_config, query):
                         logger.warning(f"Found item list under an unexpected key for '{site_name}'. Please verify mapping.")
                         break
         if not item_list:
-            logger.warning(f"Could not find a list of items in API response from '{site_name}'. Response: {str(api_data)[:200]}")
-            return results
+            msg = f"Could not find a list of items in API response from '{site_name}'. Response: {str(api_data)[:200]}"
+            logger.warning(msg)
+            # This is not a connection error, but a parsing/mapping issue.
+            # For now, return empty results. Could be an error if strict.
+            return results # Successfully connected and got JSON, but no items found in expected structure.
 
         for item in item_list:
             if not isinstance(item, dict):
@@ -817,13 +892,28 @@ def call_site_api(site_config, query):
             })
 
     except requests.exceptions.Timeout:
-        logger.error(f"API request timeout for '{site_name}': {search_url}")
+        msg = f"API request timeout for '{site_name}': {search_url}"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
+    except requests.exceptions.HTTPError as e:
+        error_message_detail = f"API HTTP error {e.response.status_code} for '{site_name}': {search_url}."
+        try:
+            error_details = e.response.json()
+            error_message_detail += f" Details: {str(error_details)[:200]}"
+        except ValueError:
+            error_message_detail += f" Response: {e.response.text[:200]}"
+        logger.error(error_message_detail)
+        return {"error": True, "error_message": error_message_detail, "results": []}
     except requests.exceptions.RequestException as e:
-        logger.error(f"API request error for '{site_name}': {e}")
+        msg = f"API request error for '{site_name}': {e} ({search_url})"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
     except Exception as e:
-        logger.error(f"Unexpected error during API call for '{site_name}': {e}")
+        msg = f"Unexpected error during API call for '{site_name}': {e} ({search_url})"
+        logger.error(msg)
+        return {"error": True, "error_message": msg, "results": []}
 
     if not results:
         logger.info(f"No results processed from API for '{site_name}' with query '{query}'. This may be due to missing site-specific field mappings in config or an empty API response.")
 
-    return results
+    return results # Success, even if empty list
