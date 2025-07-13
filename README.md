@@ -77,9 +77,26 @@ If you prefer to install manually or the scripts don't work for your environment
 
 ## Configuration
 
-### Site Configuration (sites.json)
+### Site Configuration
 
-The application requires a `sites.json` file that defines the websites you want to search. An example file `sites.example.json` is provided which you can copy and modify:
+Site configurations can be managed in two ways:
+
+#### 1. Site Configuration Management UI (Recommended)
+
+The application includes a user-friendly interface for managing site configurations.
+
+1.  Click the **"Manage Sites"** button in the header.
+2.  From this view, you can:
+    *   **View** all currently configured sites.
+    *   **Add** a new site by clicking "Add New Site" and filling out the form. The form will dynamically show the required fields based on the selected "Search Method".
+    *   **Edit** an existing site by clicking the "Edit" button.
+    *   **Delete** a site using the "Delete" button.
+
+This is the recommended method for all users as it includes validation and guidance for each field. All changes are saved to `sites.json` automatically.
+
+#### 2. Manual `sites.json` Editing
+
+For advanced users or for bulk operations, you can still manually edit the `sites.json` file. The application requires this file to define the websites you want to search. An example file `sites.example.json` is provided which you can copy and modify:
 
 ```bash
 cp sites.example.json sites.json

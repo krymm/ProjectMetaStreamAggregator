@@ -46,11 +46,14 @@ The main Flask application that:
 - Orchestrates the search process
 
 Key API endpoints:
-- `/api/search` - Process search requests
-- `/api/sites` - Get available sites
-- `/api/settings` - Get/update settings
-- `/api/cache/stats` - Get cache statistics
-- `/api/cache/clear` - Clear cache entries
+- `/api/search` - Process search requests.
+- `/api/settings` - Get/update application settings.
+- `/api/sites` - `GET` all site configurations.
+- `/api/sites` - `POST` a new site configuration.
+- `/api/sites/<site_key>` - `PUT` updates for an existing site configuration.
+- `/api/sites/<site_key>` - `DELETE` an existing site configuration.
+- `/api/cache/stats` - Get cache statistics.
+- `/api/cache/clear` - Clear cache entries.
 
 ### config_manager.py
 
@@ -155,6 +158,17 @@ Organized by functionality:
 6. Settings take effect immediately
 
 ## Extending the Application
+
+### Error Handling Notes for Developers
+
+-   **Structured Error Reporting from Scrapers**: As of recent updates, functions in `site_scraper.py` that perform site-specific searches (e.g., `scrape_search_page`, `execute_google_search`) are designed to return a structured error dictionary on unrecoverable failures (e.g., timeouts, HTTP errors, critical API errors).
+    ```python
+    # Example error return
+    {"error": True, "error_message": "Timeout connecting to ExampleSite", "results": []}
+    ```
+    When a search completes successfully (even if no items are found), it returns a list of results (`[]`). The main search orchestrator in `app.py` uses this distinction to report per-site failures.
+-   **Configuration Validation**: The `validate_site_config_data` function in `app.py` performs detailed validation on site configuration data submitted via the API. This includes checks for required fields based on the search method, URL formats, and scoring weight sums.
+-   **API Error Responses**: The `/api/search` response now includes a `debug_info.site_errors` object, which provides specific error messages for any sites that failed during the search operation. The frontend uses this to display site-specific issues.
 
 ### Adding a New Search Method
 

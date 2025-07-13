@@ -823,3 +823,134 @@ header {
         justify-content: space-between;
     }
 }
+
+/* --- Site Configuration Management Styles --- */
+.modal-content.large {
+    max-width: 1200px; /* Wider modal for forms */
+    max-height: 95vh;
+}
+
+.section-toolbar {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.section-container {
+    padding: 0.5rem;
+}
+
+.sites-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.sites-table th, .sites-table td {
+    border: 1px solid var(--border-color);
+    padding: 0.75rem;
+    text-align: left;
+    vertical-align: top;
+}
+
+.sites-table th {
+    background-color: #f7f9fc;
+}
+
+.sites-table .site-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-view {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    background-color: #fcfdff;
+}
+
+.form-section {
+    border-left: 3px solid var(--border-color);
+    padding-left: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-hint {
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: -0.75rem;
+    margin-bottom: 1rem;
+}
+
+/* --- Site Error Display Styles --- */
+.site-errors-display {
+    background-color: #fff5f5;
+    border: 1px solid var(--error-color);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.site-errors-display h4 {
+    color: var(--error-color);
+    margin-top: 0;
+}
+
+.site-errors-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.site-errors-list li {
+    padding: 0.25rem 0;
+}
+
+/* --- Notification Area Styles --- */
+#notificationArea {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.notification {
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    color: white;
+    font-weight: 500;
+    min-width: 250px;
+    max-width: 400px;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.notification.notification-info {
+    background-color: var(--info-color);
+}
+
+.notification.notification-success {
+    background-color: var(--success-color);
+}
+
+.notification.notification-error {
+    background-color: var(--error-color);
+}

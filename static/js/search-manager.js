@@ -167,6 +167,11 @@ class SearchManager {
                 pagination: searchResults.pagination,
                 searchInfo: searchResults
             });
+
+            // Display any per-site errors
+            if (searchResults.debug_info && searchResults.debug_info.site_errors) {
+                this.displaySiteErrors(searchResults.debug_info.site_errors);
+            }
             
             return searchResults;
             
@@ -284,6 +289,51 @@ class SearchManager {
     }
     
     /**
+     * Display per-site errors from the search response
+     * @param {object} siteErrors - The site_errors object from debug_info
+     */
+    displaySiteErrors(siteErrors) {
+        const summaryContainer = document.getElementById('summary-container');
+        if (!summaryContainer) return;
+
+        // Find or create a dedicated container for site errors
+        let errorDisplay = summaryContainer.querySelector('.site-errors-display');
+        if (!errorDisplay) {
+            errorDisplay = document.createElement('div');
+            errorDisplay.className = 'site-errors-display';
+            // Prepend it to the summary container so it appears first
+            summaryContainer.prepend(errorDisplay);
+        }
+
+        errorDisplay.innerHTML = ''; // Clear previous errors
+
+        if (siteErrors && Object.keys(siteErrors).length > 0) {
+            const errorList = document.createElement('ul');
+            errorList.className = 'site-errors-list';
+
+            let hasErrors = false;
+            for (const [siteName, errorMessage] of Object.entries(siteErrors)) {
+                if (errorMessage) { // Only display if there's an error message
+                    hasErrors = true;
+                    const listItem = document.createElement('li');
+                    // Use global escapeHtml if available, otherwise fallback
+                    const safeSiteName = typeof escapeHtml === 'function' ? escapeHtml(siteName) : siteName;
+                    const safeErrorMessage = typeof escapeHtml === 'function' ? escapeHtml(errorMessage) : errorMessage;
+                    listItem.innerHTML = `<strong>${safeSiteName}:</strong> ${safeErrorMessage}`;
+                    errorList.appendChild(listItem);
+                }
+            }
+
+            if (hasErrors) {
+                const title = document.createElement('h4');
+                title.textContent = 'Site Issues Encountered:';
+                errorDisplay.appendChild(title);
+                errorDisplay.appendChild(errorList);
+            }
+        }
+    }
+
+    /**
      * Reset the search state
      */
     reset() {
@@ -294,6 +344,15 @@ class SearchManager {
         this.totalPages = 0;
         this.searchInProgress = false;
         
+        // Clear any displayed site errors on reset
+        const summaryContainer = document.getElementById('summary-container');
+        if (summaryContainer) {
+            const errorDisplay = summaryContainer.querySelector('.site-errors-display');
+            if (errorDisplay) {
+                errorDisplay.innerHTML = '';
+            }
+        }
+
         // Trigger resultsUpdated event with empty results
         this.trigger('resultsUpdated', {
             results: [],
