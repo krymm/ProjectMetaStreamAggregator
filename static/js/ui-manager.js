@@ -1923,13 +1923,5 @@ class UIManager {
     }
 }
 
-// Create and export a singleton instance
-const uiManager = new UIManager();
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    uiManager.setupEventListeners();
-});
-
 // Make available globally
-window.uiManager = uiManager;
+// The UIManager will be instantiated in app.js after all scripts are loaded.

@@ -44,6 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('All modules loaded successfully');
             
             // Initialize components
+            window.uiManager = new UIManager();
+            window.uiManager.setupEventListeners();
             initializeApplication();
         })
         .catch(error => {
