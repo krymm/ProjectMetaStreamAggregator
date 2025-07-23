@@ -185,11 +185,144 @@ backend:
         agent: "testing"
         comment: "Fixed None handling for site_rating values, ranking and deduplication working correctly"
 
+frontend:
+  - task: "Main Interface Loading"
+    implemented: true
+    working: true
+    file: "templates/index.html"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Main interface elements (header, search panel, results area, player area) load successfully. Logo displays correctly as 'MetaStream Aggregator'."
+
+  - task: "Site Loading and Display"
+    implemented: true
+    working: true
+    file: "static/js/app.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Sites load successfully from API. 22 sites available and displayed in checkboxes with proper structure."
+
+  - task: "Site Selection Functionality"
+    implemented: true
+    working: false
+    file: "static/js/ui-manager.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "Select All button not working properly - sites don't get selected. Select None works correctly. Individual site selection works."
+
+  - task: "Search Input and Controls"
+    implemented: true
+    working: true
+    file: "static/js/ui-manager.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Search input, search button, reset button, and checkboxes (Use Cache, Check Links) all present and functional."
+
+  - task: "Search Functionality"
+    implemented: true
+    working: false
+    file: "static/js/search-manager.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "Search can be initiated but times out after 30 seconds without returning results. Loading indicator not visible during search."
+
+  - task: "Settings Modal"
+    implemented: true
+    working: false
+    file: "static/js/ui-manager.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "Settings modal exists but doesn't open when Settings button is clicked. Modal display remains 'none'."
+
+  - task: "Cache Modal"
+    implemented: true
+    working: false
+    file: "static/js/ui-manager.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "Cache modal exists but doesn't open when Cache button is clicked. Modal display remains 'none'."
+
+  - task: "Help Modal"
+    implemented: true
+    working: false
+    file: "static/js/ui-manager.js"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "Help modal exists but doesn't open when Help button is clicked. Modal display remains 'none'."
+
+  - task: "Player Area"
+    implemented: true
+    working: false
+    file: "static/js/player-manager.js"
+    stuck_count: 1
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "All 4 player slots present with controls, but minimize/expand functionality not working properly."
+
+  - task: "Responsive Design"
+    implemented: true
+    working: true
+    file: "static/css/style.css"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Layout adapts correctly to mobile view with flex-direction changing to column."
+
+  - task: "Reset Functionality"
+    implemented: true
+    working: true
+    file: "static/js/ui-manager.js"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Reset button successfully clears search input field."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
-  test_sequence: 1
-  run_ui: false
+  test_sequence: 2
+  run_ui: true
 
 test_plan:
   current_focus:
