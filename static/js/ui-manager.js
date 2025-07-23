@@ -446,6 +446,12 @@ class UIManager {
         });
         
         // Help modal
+        if (this.elements.helpButton) {
+            this.elements.helpButton.addEventListener('click', () => {
+                this.openHelpModal();
+            });
+        }
+        
         if (this.elements.closeHelp) {
             this.elements.closeHelp.addEventListener('click', () => {
                 this.closeHelpModal();
