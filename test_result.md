@@ -326,12 +326,24 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Site Selection Functionality"
     - "Search Functionality"
-    - "Ranking Algorithm"
-  stuck_tasks: []
+    - "Settings Modal"
+    - "Cache Modal"
+    - "Help Modal"
+    - "Player Area"
+  stuck_tasks:
+    - "Site Selection Functionality"
+    - "Search Functionality"
+    - "Settings Modal"
+    - "Cache Modal"
+    - "Help Modal"
+    - "Player Area"
   test_all: true
   test_priority: "high_first"
 
 agent_communication:
   - agent: "testing"
     message: "Comprehensive backend testing completed. Fixed critical bug in ranker.py where None values for site_rating caused TypeError. All core functionality working correctly. Ollama integration not testable due to service unavailability but endpoints are properly implemented. Success rate: 89.5% (17/19 tests passed, 2 expected failures for Ollama)."
+  - agent: "testing"
+    message: "Frontend testing completed. Main interface loads correctly with 22 sites available. Critical issues found: 1) Modal functionality completely broken - Settings, Cache, and Help modals don't open 2) Search functionality times out and doesn't return results 3) Site 'Select All' button not working 4) Player minimize/expand not working. Basic UI elements and responsive design work correctly. Requires immediate attention to modal event handlers and search integration."
