@@ -66,6 +66,7 @@ class UIManager {
         this.elements.clearCurrentSearchCacheButton = document.getElementById('clear-current-search-cache');
         
         // Help elements
+        this.elements.helpButton = document.getElementById('help-button');
         this.elements.helpModal = document.getElementById('help-modal');
         this.elements.closeHelp = document.getElementById('close-help');
 
