@@ -176,8 +176,16 @@ class UIManager {
     }
 
     resetSiteConfigForm() {
+        // Reset all form inputs within the site config form
         if (this.elements.siteConfigForm) {
-            this.elements.siteConfigForm.reset(); // Resets all form fields
+            const inputs = this.elements.siteConfigForm.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    input.checked = false;
+                } else {
+                    input.value = '';
+                }
+            });
         }
         if (this.elements.siteConfigOriginalKey) {
             this.elements.siteConfigOriginalKey.value = ''; // Clear hidden key
