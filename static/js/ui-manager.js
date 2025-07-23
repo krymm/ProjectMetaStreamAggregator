@@ -1445,6 +1445,16 @@ class UIManager {
     }
     
     /**
+     * Open help/about modal
+     */
+    openHelpModal() {
+        if (this.elements.helpModal) {
+            this.elements.helpModal.style.display = 'block';
+            this.helpModalVisible = true;
+        }
+    }
+    
+    /**
      * Close help/about modal
      */
     closeHelpModal() {
