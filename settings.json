@@ -14,9 +14,14 @@
   ],
   "results_layout": "grid",
   "scoring_weights": {
-    "relevance_weight": 0.5,
+    "multiplier_effect": 0.1,
     "rating_weight": 0.3,
-    "views_weight": 0.1,
-    "multiplier_effect": 0.1
+    "relevance_weight": 0.5,
+    "views_weight": 0.1
+  },
+  "apis_configured": {
+    "bing": false,
+    "duckduckgo": true,
+    "google": false
   }
 }

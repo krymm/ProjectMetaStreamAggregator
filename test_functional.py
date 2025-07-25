@@ -195,7 +195,7 @@ class MSAFunctionalTester:
             self.skipped_tests += 1
             return
         
-        available_sites = [site['name'] for site in sites_response]
+        available_sites = list(sites_response.keys())
         logger.info(f"Available sites: {available_sites}")
         
         # Test with different queries and site combinations
@@ -252,7 +252,7 @@ class MSAFunctionalTester:
             self.skipped_tests += 1
             return
             
-        available_sites = [site['name'] for site in sites_response]
+        available_sites = list(sites_response.keys())
         if not available_sites:
             logger.error("No sites available, skipping pagination tests")
             self.skipped_tests += 1
@@ -380,7 +380,7 @@ class MSAFunctionalTester:
                 # First, get sites
                 success, sites_response = self._make_request('get', '/api/sites')
                 if success and sites_response:
-                    available_sites = [site['name'] for site in sites_response]
+                    available_sites = list(sites_response.keys())
                     if available_sites:
                         # Perform a search with caching enabled
                         search_data = {
@@ -467,7 +467,7 @@ class MSAFunctionalTester:
         success, response = self._make_request(
             'post', 
             '/api/settings', 
-            json_data=None,
+            json_data={},
             expected_status=400  # Expect 400 Bad Request
         )
         correct_error = success and 'error' in response
@@ -484,7 +484,7 @@ class MSAFunctionalTester:
             self.skipped_tests += 1
             return
             
-        available_sites = [site['name'] for site in sites_response]
+        available_sites = list(sites_response.keys())
         if not available_sites:
             logger.error("No sites available, skipping scoring weight tests")
             self.skipped_tests += 1

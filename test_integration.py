@@ -13,7 +13,7 @@ import sys
 import os
 
 # Base URL for the API
-BASE_URL = "http://127.0.0.1:5678"
+BASE_URL = "http://127.0.0.1:8001"
 
 def print_header(message):
     """Print a formatted header message."""
@@ -124,12 +124,12 @@ def test_sites_api():
         
         # Validate response format
         sites = response.json()
-        success = isinstance(sites, list)
-        all_tests_passed &= print_result(success, "Sites response is a list")
+        success = isinstance(sites, dict)
+        all_tests_passed &= print_result(success, "Sites response is a dict")
         
         # Check for expected site properties
         if sites:
-            success = all(['name' in site and 'base_url' in site for site in sites])
+            success = all(['name' in site and 'base_url' in site for site in sites.values()])
             all_tests_passed &= print_result(success, "Each site has expected properties")
         else:
             print_result(True, "No sites configured (this is okay for testing)")
@@ -155,7 +155,7 @@ def test_search_api():
         
         # Test POST /api/search with valid data
         test_query = "test"
-        test_sites = [sites[0]['name']]  # Use the first site
+        test_sites = [list(sites.values())[0]['name']]
         
         search_data = {
             'query': test_query,
@@ -272,7 +272,7 @@ def main():
     
     # Check if server is running
     if not check_server_running():
-        print("❌ Server is not running. Please start the server at http://127.0.0.1:5678 first.")
+        print("❌ Server is not running. Please start the server at http://127.0.0.1:8001 first.")
         return False
     
     print_result(True, "Server is running")
